@@ -1,6 +1,8 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useEffect, useState } from "react";
 import { Button, FlatList, Text, TextInput, View } from "react-native";
+import * as Notifications from "expo-notifications";
+import { useMedication } from "@/context/MedicationContext";
 
 type Pastilla = {
   id: string;
@@ -10,8 +12,9 @@ type Pastilla = {
   tomada: boolean;
 };
 
+
 export default function App() {
-  const [pastillas, setPastillas] = useState<Pastilla[]>([]);
+  const { pastillas, setPastillas } = useMedication();
   const [nombre, setNombre] = useState("");
   const [cantidad, setCantidad] = useState("");
   const [tiempo, setTiempo] = useState("");

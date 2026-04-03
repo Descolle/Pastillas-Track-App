@@ -1,6 +1,5 @@
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext, useState, useEffect } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useEffect } from "react";
 
 type Pastilla = {
   id: string;
@@ -8,6 +7,7 @@ type Pastilla = {
   cantidad: number;
   tiempo: string;
   tomada: boolean;
+  notificationId?: string;
 };
 
 type ContextType = {
@@ -25,6 +25,20 @@ export const useMedication = () => {
 
 export const MedicationProvider = ({ children }: any) => {
   const [pastillas, setPastillas] = useState<Pastilla[]>([]);
+
+  // 🔄 Cargar desde storage
+  useEffect(() => {
+    const cargar = async () => {
+      const data = await AsyncStorage.getItem("pastillas");
+      if (data) setPastillas(JSON.parse(data));
+    };
+    cargar();
+  }, []);
+
+  // 💾 Guardar en storage
+  useEffect(() => {
+    AsyncStorage.setItem("pastillas", JSON.stringify(pastillas));
+  }, [pastillas]);
 
   return (
     <MedicationContext.Provider value={{ pastillas, setPastillas }}>

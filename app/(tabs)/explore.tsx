@@ -11,6 +11,10 @@ export default function Dashboard() {
   const tomadas = pastillas.filter((p) => p.tomada).length;
   const pendientes = total - tomadas;
 
+  const siguiente = pastillas
+    .filter((p) => !p.tomada)
+    .sort((a, b) => a.tiempo.localeCompare(b.tiempo))[0];
+
   return (
     <ParallaxScrollView>
       <ThemedView style={styles.container}>
@@ -19,6 +23,13 @@ export default function Dashboard() {
         <ThemedText>📊 Total: {total}</ThemedText>
         <ThemedText>✅ Tomadas: {tomadas}</ThemedText>
         <ThemedText>❌ Pendientes: {pendientes}</ThemedText>
+
+        <ThemedText>
+          ⏰ Próxima:{" "}
+          {siguiente
+            ? `${siguiente.nombre} - ${siguiente.tiempo}`
+            : "Nada pendiente 🎉"}
+        </ThemedText>
       </ThemedView>
     </ParallaxScrollView>
   );

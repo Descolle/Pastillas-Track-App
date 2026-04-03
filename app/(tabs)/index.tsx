@@ -7,12 +7,12 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { styles } from "@styles/homeStyles";
-import { useMedication } from "@/context/MedicationContext";
+import { useMedication } from "../context/MedicationContext";
+import { styles } from "../styles/homeStyles";
 import {
   requestPermissions,
   scheduleNotification,
-} from "@/utils/notifications";
+} from "../utils/notification";
 
 export default function Home() {
   const { pastillas, setPastillas } = useMedication();

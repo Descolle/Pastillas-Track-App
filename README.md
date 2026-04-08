@@ -1,50 +1,171 @@
-# Welcome to your Expo app 👋
+# 💊 Pastillas Track App
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Aplicación móvil desarrollada con React Native + Expo para gestionar el consumo de medicamentos diarios, incluyendo recordatorios automáticos mediante notificaciones.
 
-## Get started
+---
 
-1. Install dependencies
+## 🚀 Descripción
 
-   ```bash
-   npm install
-   ```
+Pastillas Track App permite a los usuarios:
 
-2. Start the app
+* Registrar medicamentos con nombre, cantidad y horario
+* Marcar medicamentos como tomados
+* Editar o eliminar registros
+* Recibir notificaciones diarias en la hora indicada
+* Visualizar un resumen del estado diario (tomadas / pendientes)
 
-   ```bash
-   npx expo start
-   ```
+---
 
-In the output, you'll find options to open the app in a
+## 🛠️ Tecnologías utilizadas
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+* React Native
+* Expo (Expo Router)
+* TypeScript
+* AsyncStorage (persistencia local)
+* Expo Notifications (recordatorios)
+* Context API (estado global)
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+---
 
-## Get a fresh project
+## 📁 Estructura del proyecto
 
-When you're ready, run:
+```
+app/
+  (tabs)/
+    index.tsx        → Pantalla principal (CRUD)
+    explore.tsx      → Dashboard / resumen
+    layout.tsx       → Navegación Tabs
 
-```bash
-npm run reset-project
+  layout.tsx         → Provider global + configuración
+
+components/
+  ui/                → Componentes reutilizables (Button, Card, Input)
+
+context/
+  MedicationContext.tsx → Estado global de pastillas
+
+hooks/
+  useNotifications.ts → Configuración global de notificaciones
+
+utils/
+  notifications.ts   → Funciones de notificación
+
+styles/
+  homeStyles.ts      → Estilos de la pantalla principal
+
+theme/
+  colors.ts          → Colores globales
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+---
 
-## Learn more
+## ⚙️ Instalación
 
-To learn more about developing your project with Expo, look at the following resources:
+1. Clonar el repositorio:
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+```bash
+git clone https://github.com/Descolle/Pastillas-Track-App.git
+```
 
-## Join the community
+2. Entrar al proyecto:
 
-Join our community of developers creating universal apps.
+```bash
+cd Pastillas-Track-App
+```
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+3. Instalar dependencias:
+
+```bash
+npm install
+```
+
+---
+
+## ▶️ Cómo ejecutar la app
+
+Iniciar el servidor de desarrollo:
+
+```bash
+npx expo start
+```
+
+Opciones:
+
+* Presionar `a` → abrir en Android
+* Presionar `w` → abrir en navegador
+* Escanear QR con Expo Go (recomendado)
+
+---
+
+## 🔔 Notificaciones
+
+La app utiliza notificaciones locales:
+
+* Se solicitan permisos automáticamente
+* Se programan al crear una pastilla
+* Se repiten diariamente
+* Se eliminan al borrar la pastilla
+
+⚠️ Importante:
+
+* Probar en dispositivo físico (emuladores pueden fallar)
+
+---
+
+## 💾 Persistencia
+
+* Se utiliza AsyncStorage
+* Los datos se guardan automáticamente al modificar el estado
+* Se cargan al iniciar la app
+
+---
+
+## 🧠 Funcionalidades principales
+
+* ➕ Crear medicamento
+* ✏️ Editar medicamento
+* ❌ Eliminar medicamento
+* ✅ Marcar como tomado
+* 🔔 Notificación automática diaria
+* 📊 Dashboard con resumen
+
+---
+
+## 🎨 UI
+
+* Diseño basado en cards
+* Componentes reutilizables
+* Colores centralizados en theme
+* Estructura modular escalable
+
+---
+
+## 🚧 Mejoras futuras
+
+* 🔔 Notificaciones interactivas (botón "Tomar")
+* 🌙 Dark mode automático
+* 📆 Historial de consumo
+* ☁️ Backend con usuarios
+* 📱 Publicación en Play Store
+
+---
+
+## 🧑‍💻 Autor
+
+Desarrollado por:
+**Tomás Corvalán**
+
+---
+
+## 📌 Notas finales
+
+Este proyecto fue desarrollado como práctica para:
+
+* Manejo de estado global
+* Persistencia de datos
+* Integración de notificaciones
+* Arquitectura escalable en React Native
+
+---
+
+🔥 Proyecto ideal para portafolio junior / semi senior.

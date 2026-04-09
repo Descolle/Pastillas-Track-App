@@ -1,7 +1,7 @@
-import { createContext, useContext, useState, useEffect } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { createContext, useContext, useEffect, useState } from "react";
 
-type Pastilla = {
+export type Pastilla = {
   id: string;
   nombre: string;
   cantidad: number;
@@ -26,7 +26,7 @@ export const useMedication = () => {
 export const MedicationProvider = ({ children }: any) => {
   const [pastillas, setPastillas] = useState<Pastilla[]>([]);
 
-  // 🔄 Cargar desde storage
+  // 🔄 Cargar datos al iniciar
   useEffect(() => {
     const cargar = async () => {
       const data = await AsyncStorage.getItem("pastillas");
@@ -35,9 +35,12 @@ export const MedicationProvider = ({ children }: any) => {
     cargar();
   }, []);
 
-  // 💾 Guardar en storage
+  // 💾 Guardar automáticamente
   useEffect(() => {
-    AsyncStorage.setItem("pastillas", JSON.stringify(pastillas));
+    const guardar = async () => {
+      await AsyncStorage.setItem("pastillas", JSON.stringify(pastillas));
+    };
+    guardar();
   }, [pastillas]);
 
   return (

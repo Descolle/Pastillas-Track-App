@@ -1,15 +1,9 @@
-import * as Notifications from "expo-notifications";
 import { useState } from "react";
-import {
-  FlatList,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { Alert, Button, FlatList, Text, TextInput, View } from "react-native";
+
 import { useMedication } from "../context/MedicationContext";
-import { styles } from "../styles/homeStyles";
 import {
+  cancelNotification,
   requestPermissions,
   scheduleNotification,
 } from "../utils/notification";
@@ -22,30 +16,52 @@ export default function Home() {
   const [tiempo, setTiempo] = useState("");
   const [editandoId, setEditandoId] = useState<string | null>(null);
 
-  const agregarPastilla = async () => {
-    if (!nombre || !cantidad || !tiempo) return;
+  // ➕ AGREGAR / EDITAR
+  const guardarPastilla = async () => {
+    if (!nombre || !cantidad || !tiempo) {
+      alert("Completa todos los campos");
+      return;
+    }
 
     const permiso = await requestPermissions();
-    if (!permiso) return;
+    if (!permiso) {
+      alert("Debes permitir notificaciones");
+      return;
+    }
 
-    const notificationId = await scheduleNotification(nombre, tiempo);
-
+    // 🔁 EDITAR
     if (editandoId) {
-      setPastillas((prev) =>
-        prev.map((p) =>
-          p.id === editandoId
-            ? {
-                ...p,
-                nombre,
-                cantidad: Number(cantidad),
-                tiempo,
-                notificationId,
-              }
-            : p,
-        ),
+      const nuevas = await Promise.all(
+        pastillas.map(async (p) => {
+          if (p.id === editandoId) {
+            // cancelar notificación anterior
+            if (p.notificationId) {
+              await cancelNotification(p.notificationId);
+            }
+
+            const newNotificationId = await scheduleNotification(
+              nombre,
+              tiempo,
+            );
+
+            return {
+              ...p,
+              nombre,
+              cantidad: Number(cantidad),
+              tiempo,
+              notificationId: newNotificationId,
+            };
+          }
+          return p;
+        }),
       );
+
+      setPastillas(nuevas);
       setEditandoId(null);
     } else {
+      // ➕ NUEVA
+      const notificationId = await scheduleNotification(nombre, tiempo);
+
       const nueva = {
         id: Date.now().toString(),
         nombre,
@@ -58,29 +74,41 @@ export default function Home() {
       setPastillas((prev) => [...prev, nueva]);
     }
 
+    // limpiar inputs
     setNombre("");
     setCantidad("");
     setTiempo("");
   };
 
+  // ✅ MARCAR
   const marcarTomada = (id: string) => {
-    setPastillas((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, tomada: !p.tomada } : p)),
+    const nuevas = pastillas.map((p) =>
+      p.id === id ? { ...p, tomada: !p.tomada } : p,
     );
+    setPastillas(nuevas);
   };
 
-  const eliminarPastilla = async (id: string) => {
-    const pastilla = pastillas.find((p) => p.id === id);
+  // ❌ ELIMINAR
+  const eliminarPastilla = (id: string) => {
+    Alert.alert("Eliminar", "¿Seguro?", [
+      { text: "Cancelar" },
+      {
+        text: "Eliminar",
+        onPress: async () => {
+          const pastilla = pastillas.find((p) => p.id === id);
 
-    if (pastilla?.notificationId) {
-      await Notifications.cancelScheduledNotificationAsync(
-        pastilla.notificationId,
-      );
-    }
+          if (pastilla?.notificationId) {
+            await cancelNotification(pastilla.notificationId);
+          }
 
-    setPastillas((prev) => prev.filter((p) => p.id !== id));
+          const nuevas = pastillas.filter((p) => p.id !== id);
+          setPastillas(nuevas);
+        },
+      },
+    ]);
   };
 
+  // ✏️ EDITAR
   const editarPastilla = (p: any) => {
     setNombre(p.nombre);
     setCantidad(p.cantidad.toString());
@@ -88,80 +116,61 @@ export default function Home() {
     setEditandoId(p.id);
   };
 
+  const pastillasOrdenadas = [...pastillas].sort((a, b) =>
+    a.tiempo.localeCompare(b.tiempo),
+  );
+
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>💊 Mis Medicamentos</Text>
+    <View style={{ padding: 20, flex: 1, backgroundColor: "white" }}>
+      <Text style={{ fontSize: 24 }}>💊 Pastillas</Text>
 
-      {/* FORM */}
-      <View style={styles.card}>
-        <TextInput
-          placeholder="Nombre"
-          value={nombre}
-          onChangeText={setNombre}
-          style={styles.input}
-        />
+      <TextInput
+        placeholder="Nombre"
+        value={nombre}
+        onChangeText={setNombre}
+        style={{ borderWidth: 1, marginVertical: 5, padding: 10 }}
+      />
 
-        <TextInput
-          placeholder="Cantidad"
-          value={cantidad}
-          onChangeText={setCantidad}
-          keyboardType="numeric"
-          style={styles.input}
-        />
+      <TextInput
+        placeholder="Cantidad"
+        value={cantidad}
+        onChangeText={setCantidad}
+        keyboardType="numeric"
+        style={{ borderWidth: 1, marginVertical: 5, padding: 10 }}
+      />
 
-        <TextInput
-          placeholder="Hora (08:00)"
-          value={tiempo}
-          onChangeText={setTiempo}
-          style={styles.input}
-        />
+      <TextInput
+        placeholder="Hora (08:00)"
+        value={tiempo}
+        onChangeText={setTiempo}
+        style={{ borderWidth: 1, marginVertical: 5, padding: 10 }}
+      />
 
-        <TouchableOpacity style={styles.button} onPress={agregarPastilla}>
-          <Text style={styles.buttonText}>
-            {editandoId ? "Actualizar" : "Agregar"}
-          </Text>
-        </TouchableOpacity>
-      </View>
+      <Button
+        title={editandoId ? "Actualizar" : "Guardar"}
+        onPress={guardarPastilla}
+      />
 
-      {/* LISTA */}
       <FlatList
-        data={[...pastillas].sort((a, b) => a.tiempo.localeCompare(b.tiempo))}
+        data={pastillasOrdenadas}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
-          <View style={styles.card}>
-            <Text style={styles.itemTitle}>
-              {item.nombre} ({item.cantidad})
+          <View style={{ marginVertical: 10 }}>
+            <Text>
+              {item.nombre} - {item.cantidad} - {item.tiempo}
             </Text>
 
-            <Text style={styles.itemSubtitle}>⏰ {item.tiempo}</Text>
+            <Button
+              title={item.tomada ? "Desmarcar" : "Tomada"}
+              onPress={() => marcarTomada(item.id)}
+            />
 
-            <View style={styles.row}>
-              <TouchableOpacity
-                style={[
-                  styles.smallButton,
-                  { backgroundColor: item.tomada ? "#aaa" : "#4CAF50" },
-                ]}
-                onPress={() => marcarTomada(item.id)}
-              >
-                <Text style={styles.smallText}>
-                  {item.tomada ? "Desmarcar" : "Tomada"}
-                </Text>
-              </TouchableOpacity>
+            <Button title="Editar" onPress={() => editarPastilla(item)} />
 
-              <TouchableOpacity
-                style={[styles.smallButton, { backgroundColor: "#2196F3" }]}
-                onPress={() => editarPastilla(item)}
-              >
-                <Text style={styles.smallText}>Editar</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[styles.smallButton, { backgroundColor: "#f44336" }]}
-                onPress={() => eliminarPastilla(item.id)}
-              >
-                <Text style={styles.smallText}>Eliminar</Text>
-              </TouchableOpacity>
-            </View>
+            <Button
+              title="Eliminar"
+              onPress={() => eliminarPastilla(item.id)}
+            />
           </View>
         )}
       />

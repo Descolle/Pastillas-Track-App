@@ -5,23 +5,29 @@ export const requestPermissions = async () => {
   return status === "granted";
 };
 
-export const scheduleNotification = async (
-  nombre: string,
-  tiempo: string
-) => {
+export const scheduleNotification = async (nombre: string, tiempo: string) => {
   const [hour, minute] = tiempo.split(":").map(Number);
+
+  // ⚠️ Validación básica
+  if (isNaN(hour) || isNaN(minute)) {
+    throw new Error("Hora inválida");
+  }
 
   const id = await Notifications.scheduleNotificationAsync({
     content: {
       title: "💊 Hora de tu medicamento",
-      body: `Es momento de tomar: ${nombre}`,
+      body: `Tomar ${nombre}`,
     },
     trigger: {
+      type: Notifications.SchedulableTriggerInputTypes.DAILY,
       hour,
       minute,
-      repeats: true,
     },
   });
 
   return id;
+};
+
+export const cancelNotification = async (id: string) => {
+  await Notifications.cancelScheduledNotificationAsync(id);
 };

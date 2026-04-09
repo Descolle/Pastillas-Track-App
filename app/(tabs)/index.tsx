@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { Alert, Button, FlatList, Text, TextInput, View } from "react-native";
 
-import { useMedication } from "../context/MedicationContext";
+import { useMedication } from "../../context/MedicationContext";
 import {
   cancelNotification,
   requestPermissions,
   scheduleNotification,
-} from "../utils/notification";
+} from "../../utils/notification";
 
 export default function Home() {
   const { pastillas, setPastillas } = useMedication();

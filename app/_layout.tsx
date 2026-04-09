@@ -1,4 +1,4 @@
-import { MedicationProvider } from "@/context/MedicationContext";
+import { MedicationProvider } from "../context/MedicationContext";
 import * as Notifications from "expo-notifications";
 import { Stack } from "expo-router";
 

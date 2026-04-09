@@ -1,8 +1,7 @@
-import ParallaxScrollView from "@/components/parallax-scroll-view";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
-import { useMedication } from "@/context/MedicationContext";
 import { StyleSheet } from "react-native";
+import { useMedication } from "../../context/MedicationContext";
 
 export default function Dashboard() {
   const { pastillas } = useMedication();
@@ -16,7 +15,7 @@ export default function Dashboard() {
     .sort((a, b) => a.tiempo.localeCompare(b.tiempo))[0];
 
   return (
-    <ParallaxScrollView>
+    <View>
       <ThemedView style={styles.container}>
         <ThemedText type="title">💊 Resumen</ThemedText>
 
@@ -31,7 +30,7 @@ export default function Dashboard() {
             : "Nada pendiente 🎉"}
         </ThemedText>
       </ThemedView>
-    </ParallaxScrollView>
+    </View>
   );
 }
 

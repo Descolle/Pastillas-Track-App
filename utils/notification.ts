@@ -6,10 +6,20 @@ export const requestPermissions = async () => {
 };
 
 export const scheduleNotification = async (nombre: string, tiempo: string) => {
-  const [hour, minute] = tiempo.split(":").map(Number);
-
-  // ⚠️ Validación básica
-  if (isNaN(hour) || isNaN(minute)) {
+  const parts = tiempo.trim().split(":");
+  if (parts.length !== 2) {
+    throw new Error("Hora inválida");
+  }
+  const hour = Number(parts[0]);
+  const minute = Number(parts[1]);
+  if (
+    !Number.isInteger(hour) ||
+    !Number.isInteger(minute) ||
+    hour < 0 ||
+    hour > 23 ||
+    minute < 0 ||
+    minute > 59
+  ) {
     throw new Error("Hora inválida");
   }
 

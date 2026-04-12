@@ -1,10 +1,14 @@
+import { ActivityIndicator, StyleSheet, View } from "react-native";
+
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
-import { StyleSheet } from "react-native";
-import { useMedication } from "../../context/MedicationContext";
+import { useMedication } from "@/context/MedicationContext";
+import { useThemeColor } from "@/hooks/use-theme-color";
 
 export default function Dashboard() {
-  const { pastillas } = useMedication();
+  const { pastillas, hydrated } = useMedication();
+  const border = useThemeColor({ light: "#C6C6C8", dark: "#3A3A3C" }, "icon");
+  const cardBg = useThemeColor({ light: "#FFFFFF", dark: "#2C2C2E" }, "background");
 
   const total = pastillas.length;
   const tomadas = pastillas.filter((p) => p.tomada).length;
@@ -14,28 +18,76 @@ export default function Dashboard() {
     .filter((p) => !p.tomada)
     .sort((a, b) => a.tiempo.localeCompare(b.tiempo))[0];
 
-  return (
-    <View>
-      <ThemedView style={styles.container}>
-        <ThemedText type="title">💊 Resumen</ThemedText>
-
-        <ThemedText>📊 Total: {total}</ThemedText>
-        <ThemedText>✅ Tomadas: {tomadas}</ThemedText>
-        <ThemedText>❌ Pendientes: {pendientes}</ThemedText>
-
-        <ThemedText>
-          ⏰ Próxima:{" "}
-          {siguiente
-            ? `${siguiente.nombre} - ${siguiente.tiempo}`
-            : "Nada pendiente 🎉"}
-        </ThemedText>
+  if (!hydrated) {
+    return (
+      <ThemedView style={[styles.centered, styles.flex]} lightColor="#F2F2F7">
+        <ActivityIndicator size="large" />
       </ThemedView>
-    </View>
+    );
+  }
+
+  return (
+    <ThemedView style={styles.flex} lightColor="#F2F2F7">
+      <View style={styles.inner}>
+        <ThemedText type="title" style={styles.title}>
+          💊 Resumen
+        </ThemedText>
+
+        <View style={[styles.card, { borderColor: border, backgroundColor: cardBg }]}>
+          <ThemedText type="subtitle">Hoy</ThemedText>
+          <ThemedText style={styles.statLine}>
+            Total: <ThemedText type="defaultSemiBold">{total}</ThemedText>
+          </ThemedText>
+          <ThemedText style={styles.statLine}>
+            Tomadas: <ThemedText type="defaultSemiBold">{tomadas}</ThemedText>
+          </ThemedText>
+          <ThemedText style={styles.statLine}>
+            Pendientes:{" "}
+            <ThemedText type="defaultSemiBold">{pendientes}</ThemedText>
+          </ThemedText>
+        </View>
+
+        <View style={[styles.card, { borderColor: border, backgroundColor: cardBg }]}>
+          <ThemedText type="subtitle">Próxima dosis</ThemedText>
+          <ThemedText style={styles.next}>
+            {siguiente
+              ? `${siguiente.nombre} · ${siguiente.tiempo}`
+              : "Nada pendiente"}
+          </ThemedText>
+        </View>
+      </View>
+    </ThemedView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  flex: {
+    flex: 1,
+  },
+  centered: {
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  inner: {
+    flex: 1,
     padding: 20,
+  },
+  title: {
+    marginBottom: 20,
+  },
+  card: {
+    borderRadius: 12,
+    borderWidth: 1,
+    padding: 16,
+    marginBottom: 14,
+  },
+  statLine: {
+    marginTop: 8,
+    fontSize: 16,
+  },
+  next: {
+    marginTop: 10,
+    fontSize: 17,
+    lineHeight: 24,
   },
 });

@@ -48,3 +48,22 @@ export function formatDosisForDisplay(n: number): string {
     minimumFractionDigits: 0,
   }).format(n);
 }
+
+export function timeHMToMinutes(str: string): number | null {
+  const parsed = parseTimeHMToDate(str);
+  if (!parsed) return null;
+  return parsed.getHours() * 60 + parsed.getMinutes();
+}
+
+export function compareTimeHM(a: string, b: string): number {
+  const aMinutes = timeHMToMinutes(a);
+  const bMinutes = timeHMToMinutes(b);
+
+  if (aMinutes !== null && bMinutes !== null) {
+    return aMinutes - bMinutes;
+  }
+  if (aMinutes === null && bMinutes === null) {
+    return a.localeCompare(b);
+  }
+  return aMinutes === null ? 1 : -1;
+}

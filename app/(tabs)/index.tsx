@@ -20,6 +20,7 @@ import { useMedication, type Pastilla } from "@/context/MedicationContext";
 import { useThemeColor } from "@/hooks/use-theme-color";
 import { useMedicationHomeStyles } from "@/styles/homeStyles";
 import {
+  compareTimeHM,
   defaultTimeDate,
   formatDosisForDisplay,
   formatTimeHM,
@@ -208,7 +209,7 @@ export default function Home() {
   };
 
   const pastillasOrdenadas = [...pastillas].sort((a, b) =>
-    a.tiempo.localeCompare(b.tiempo),
+    compareTimeHM(a.tiempo, b.tiempo),
   );
 
   const inputStyle = [styles.input, { color: textColor }];
@@ -295,10 +296,7 @@ export default function Home() {
         keyboardType="decimal-pad"
         style={inputStyle}
       />
-      <ThemedText style={styles.timeHint}>
-        Mayor que 0; puedes usar decimales para media pastilla (0,5).
-      </ThemedText>
-
+      
       {campoHora}
 
       <Pressable

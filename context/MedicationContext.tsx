@@ -17,6 +17,18 @@ export type Pastilla = {
 };
 
 const STORAGE_KEY = "pastillas";
+const LAST_RESET_KEY = "pastillas_last_reset_date";
+
+function localDateKey(date: Date = new Date()): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+function resetTomadas(pastillas: Pastilla[]): Pastilla[] {
+  return pastillas.map((p) => (p.tomada ? { ...p, tomada: false } : p));
+}
 
 function isPastilla(x: unknown): x is Pastilla {
   if (x === null || typeof x !== "object") return false;
@@ -63,13 +75,35 @@ export const MedicationProvider = ({ children }: { children: ReactNode }) => {
     const cargar = async () => {
       try {
         const data = await AsyncStorage.getItem(STORAGE_KEY);
-        if (data) setPastillas(parsePastillas(data));
+        const loaded = data ? parsePastillas(data) : [];
+        const today = localDateKey();
+        const lastReset = await AsyncStorage.getItem(LAST_RESET_KEY);
+        const normalized = lastReset === today ? loaded : resetTomadas(loaded);
+        await AsyncStorage.setItem(LAST_RESET_KEY, today);
+        setPastillas(normalized);
       } finally {
         setHydrated(true);
       }
     };
     cargar();
   }, []);
+
+  useEffect(() => {
+    if (!hydrated) return;
+
+    const checkDailyReset = async () => {
+      const today = localDateKey();
+      const lastReset = await AsyncStorage.getItem(LAST_RESET_KEY);
+      if (lastReset === today) return;
+
+      await AsyncStorage.setItem(LAST_RESET_KEY, today);
+      setPastillas((prev) => resetTomadas(prev));
+    };
+
+    checkDailyReset();
+    const id = setInterval(checkDailyReset, 60_000);
+    return () => clearInterval(id);
+  }, [hydrated]);
 
   useEffect(() => {
     if (!hydrated) return;

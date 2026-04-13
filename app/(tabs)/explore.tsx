@@ -4,6 +4,7 @@ import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { useMedication } from "@/context/MedicationContext";
 import { useThemeColor } from "@/hooks/use-theme-color";
+import { compareTimeHM } from "@/utils/medication-form";
 
 export default function Dashboard() {
   const { pastillas, hydrated } = useMedication();
@@ -16,7 +17,7 @@ export default function Dashboard() {
 
   const siguiente = pastillas
     .filter((p) => !p.tomada)
-    .sort((a, b) => a.tiempo.localeCompare(b.tiempo))[0];
+    .sort((a, b) => compareTimeHM(a.tiempo, b.tiempo))[0];
 
   if (!hydrated) {
     return (

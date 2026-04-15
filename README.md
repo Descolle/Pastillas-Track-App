@@ -13,6 +13,9 @@ Pastillas Track App permite a los usuarios:
 * Editar o eliminar registros
 * Recibir notificaciones diarias en la hora indicada
 * Visualizar un resumen del estado diario (tomadas / pendientes)
+* Crear cuenta e iniciar sesión (SaaS)
+* Sincronizar datos entre dispositivos con Supabase
+* Gestionar plan Free/Pro con Stripe
 
 ---
 
@@ -24,6 +27,8 @@ Pastillas Track App permite a los usuarios:
 * AsyncStorage (persistencia local)
 * Expo Notifications (recordatorios)
 * Context API (estado global)
+* Supabase (Auth + Postgres + RLS)
+* Stripe (suscripciones)
 
 ---
 
@@ -79,6 +84,30 @@ cd Pastillas-Track-App
 npm install
 ```
 
+4. Configurar variables públicas en `app.json` dentro de `expo.extra`:
+
+```json
+{
+  "EXPO_PUBLIC_SUPABASE_URL": "https://YOUR_PROJECT.supabase.co",
+  "EXPO_PUBLIC_SUPABASE_ANON_KEY": "YOUR_SUPABASE_ANON_KEY",
+  "EXPO_PUBLIC_BILLING_API_URL": "https://YOUR_BILLING_API_URL",
+  "EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY": "pk_test_xxx"
+}
+```
+
+5. Ejecutar SQL de Supabase:
+
+* `supabase/sql/001_saas_schema.sql`
+* `supabase/sql/002_billing_helpers.sql`
+
+6. (Opcional en local) Billing API:
+
+```bash
+cd backend/billing-api
+npm install
+npm run dev
+```
+
 ---
 
 ## ▶️ Cómo ejecutar la app
@@ -112,11 +141,73 @@ La app utiliza notificaciones locales:
 
 ---
 
+## 📦 Builds Android (APK y AAB)
+
+La app puede generarse en dos formatos distintos:
+
+* `APK` → para instalar manualmente en celulares de prueba
+* `AAB` → para subir a Google Play Store
+
+Comandos:
+
+```bash
+npm run build:android:apk
+npm run build:android:aab
+```
+
+Perfiles EAS usados:
+
+* `preview` → genera APK (`distribution: internal`, `buildType: apk`)
+* `production` → genera AAB (`buildType: app-bundle`)
+
+Notas importantes:
+
+* El archivo `AAB` no se instala directo en el teléfono.
+* Para instalar manualmente en Android necesitas un `APK`.
+* Si instalas una APK nueva encima de la anterior (misma firma y package), la app se actualiza sin perder datos.
+
+---
+
 ## 💾 Persistencia
 
-* Se utiliza AsyncStorage
-* Los datos se guardan automáticamente al modificar el estado
-* Se cargan al iniciar la app
+* Cache local con AsyncStorage (offline-first)
+* Sincronización automática con Supabase al iniciar sesión
+* Migración local -> nube en primer login
+
+---
+
+## 🔐 Multi-tenant y seguridad
+
+* Cada fila de `medications` y `medication_events` incluye `user_id`
+* Las políticas RLS impiden leer/escribir datos de otros usuarios
+* El plan de suscripción vive en `profiles.plan_tier`
+
+---
+
+## 💳 Billing Stripe
+
+* Checkout para upgrade a `pro`
+* Portal de cliente para gestionar suscripción
+* Webhook para actualizar `plan_tier` y estado en `profiles`
+
+Configurar en backend `billing-api`:
+
+* `STRIPE_SECRET_KEY`
+* `STRIPE_PRICE_PRO`
+* `STRIPE_WEBHOOK_SECRET`
+* `SUPABASE_URL`
+* `SUPABASE_SERVICE_ROLE_KEY`
+* URLs de retorno (`STRIPE_SUCCESS_URL`, `STRIPE_CANCEL_URL`, `STRIPE_PORTAL_RETURN_URL`)
+
+---
+
+## ✅ Release checklist (SaaS)
+
+* Variables `expo.extra` configuradas por entorno (dev/prod)
+* SQL de Supabase aplicado y RLS validado
+* Billing API desplegada con webhook activo
+* Prueba de login, CRUD, sync y upgrade/downgrade de plan
+* Build Android con entorno correcto
 
 ---
 

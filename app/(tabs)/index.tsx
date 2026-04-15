@@ -34,7 +34,15 @@ import {
 } from "@/utils/notification";
 
 export default function Home() {
-  const { pastillas, setPastillas, hydrated } = useMedication();
+  const {
+    pastillas,
+    setPastillas,
+    hydrated,
+    canCreateMedication,
+    limits,
+    removePastillaById,
+    trackMedicationToggle,
+  } = useMedication();
   const styles = useMedicationHomeStyles();
   const textColor = useThemeColor({}, "text");
   const tintColor = useThemeColor({}, "tint");
@@ -115,6 +123,13 @@ export default function Home() {
     }
 
     try {
+      if (!editandoId && !canCreateMedication) {
+        aviso(
+          "Límite del plan Free",
+          `Puedes crear hasta ${limits.maxMedications} recordatorios. Mejora a Pro para ampliar el límite.`,
+        );
+        return;
+      }
       if (editandoId) {
         const nuevas = await Promise.all(
           pastillas.map(async (p) => {
@@ -170,9 +185,12 @@ export default function Home() {
   };
 
   const marcarTomada = (id: string) => {
-    setPastillas((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, tomada: !p.tomada } : p)),
-    );
+    setPastillas((prev) => {
+      const current = prev.find((p) => p.id === id);
+      const nextTomada = !(current?.tomada ?? false);
+      trackMedicationToggle(id, nextTomada).catch(() => undefined);
+      return prev.map((p) => (p.id === id ? { ...p, tomada: nextTomada } : p));
+    });
   };
 
   const eliminarPastilla = (id: string) => {
@@ -188,7 +206,7 @@ export default function Home() {
             await cancelNotification(pastilla.notificationId);
           }
 
-          setPastillas((prev) => prev.filter((p) => p.id !== id));
+          removePastillaById(id).catch(() => undefined);
         },
       },
     ]);

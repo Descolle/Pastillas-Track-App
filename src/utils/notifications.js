@@ -1,14 +1,14 @@
 import * as Notifications from "expo-notifications";
 
-export const scheduleNotification = async (time) => {
+export const scheduleNotification = async (hour, minute) => {
   await Notifications.scheduleNotificationAsync({
     content: {
       title: "💊 Hora de tu medicamento",
       body: "No olvides tomar tu pastilla",
     },
     trigger: {
-      hour: time.hour,
-      minute: time.minute,
+      hour,
+      minute,
       repeats: true,
     },
   });

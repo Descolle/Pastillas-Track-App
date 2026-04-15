@@ -1,3 +1,5 @@
+import { supabase } from "./supabase";
+
 export const markAsTaken = async (scheduleId) => {
   const today = new Date().toISOString().split("T")[0];
 
@@ -9,10 +11,8 @@ export const markAsTaken = async (scheduleId) => {
     .single();
 
   if (data) {
-    // actualizar
     await supabase.from("intakes").update({ taken: true }).eq("id", data.id);
   } else {
-    // crear
     await supabase.from("intakes").insert([
       {
         schedule_id: scheduleId,

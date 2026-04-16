@@ -15,8 +15,11 @@ import { useThemeColor } from "@/hooks/use-theme-color";
 import { useMedicationHomeStyles } from "@/styles/homeStyles";
 
 import {
+  deleteMedication,
   loadRemotePastillas,
   markAsTaken,
+  updateMedication,
+  type Pastilla,
 } from "@/services/medicationService";
 
 import { generateTodayIntakes } from "@/api/intakes";
@@ -28,10 +31,9 @@ export default function Home() {
   const tintColor = useThemeColor({}, "tint");
   const iconMuted = useThemeColor({}, "icon");
 
-  const [pastillas, setPastillas] = useState([]);
+  const [pastillas, setPastillas] = useState<Pastilla[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // 🔥 CARGA REAL DESDE SUPABASE
   useEffect(() => {
     const load = async () => {
       if (!user) return;
@@ -39,11 +41,11 @@ export default function Home() {
       try {
         setLoading(true);
 
-        // 1. generar intakes del día
         await generateTodayIntakes(user.id);
 
-        // 2. cargar pastillas reales
         const data = await loadRemotePastillas(user.id);
+        console.log("📦 Pastillas:", data);
+
         setPastillas(data);
       } catch (err) {
         console.log(err);
@@ -56,7 +58,7 @@ export default function Home() {
     load();
   }, [user]);
 
-  // 🔘 MARCAR COMO TOMADA (REAL DB)
+  // ✅ Marcar como tomada
   const marcarTomada = async (scheduleId: string) => {
     try {
       await markAsTaken(scheduleId);
@@ -69,6 +71,52 @@ export default function Home() {
       console.log(err);
       Alert.alert("Error", "No se pudo actualizar");
     }
+  };
+
+  // ✅ Eliminar
+  const eliminar = async (id: string) => {
+    Alert.alert("Eliminar", "¿Seguro que quieres eliminar?", [
+      { text: "Cancelar", style: "cancel" },
+      {
+        text: "Eliminar",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            await deleteMedication(id);
+
+            if (user) {
+              const updated = await loadRemotePastillas(user.id);
+              setPastillas(updated);
+            }
+          } catch {
+            Alert.alert("Error", "No se pudo eliminar");
+          }
+        },
+      },
+    ]);
+  };
+
+  // ✅ Actualizar dosis
+  const actualizar = async (item: Pastilla, nuevaDosis: number) => {
+    try {
+      await updateMedication(item.id, item.nombre, nuevaDosis, item.time);
+
+      if (user) {
+        const updated = await loadRemotePastillas(user.id);
+        setPastillas(updated);
+      }
+    } catch {
+      Alert.alert("Error", "No se pudo actualizar");
+    }
+  };
+
+  // ✅ Editar (simple)
+  const editar = (item: Pastilla) => {
+    Alert.alert("Editar dosis", "Selecciona una opción", [
+      { text: "1 dosis", onPress: () => actualizar(item, 1) },
+      { text: "2 dosis", onPress: () => actualizar(item, 2) },
+      { text: "Cancelar", style: "cancel" },
+    ]);
   };
 
   if (loading) {
@@ -114,9 +162,19 @@ export default function Home() {
             </View>
 
             <ThemedText style={styles.cardMeta}>
-              {item.cantidad} dosis · {item.tiempo}
+              {item.cantidad} dosis · {item.time}
               {item.tomada ? " · Tomada ✅" : ""}
             </ThemedText>
+
+            <View style={{ flexDirection: "row", gap: 12, marginTop: 10 }}>
+              <Pressable onPress={() => editar(item)}>
+                <MaterialIcons name="edit" size={24} color="blue" />
+              </Pressable>
+
+              <Pressable onPress={() => eliminar(item.id)}>
+                <MaterialIcons name="delete" size={24} color="red" />
+              </Pressable>
+            </View>
           </View>
         )}
       />

@@ -9,11 +9,9 @@ import {
 
 import { useAuth } from "@/context/AuthContext";
 import {
-  checkDailyResetLocal,
   insertMedicationEvent,
-  loadLocalPastillas,
   loadRemotePastillas,
-  type Pastilla
+  type Pastilla,
 } from "@/services/medicationService";
 import { logError } from "@/services/observability";
 import type { PlanTier } from "@/types/saas";
@@ -41,10 +39,14 @@ export const useMedication = () => {
 };
 
 export const MedicationProvider = ({ children }: { children: ReactNode }) => {
-  const { user, profile } = useAuth();
+  const { user } = useAuth();
+
   const [pastillas, setPastillas] = useState<Pastilla[]>([]);
   const [hydrated, setHydrated] = useState(false);
 
+  //
+  // 🔥 SOLO REMOTE (SaaS)
+  //
   useEffect(() => {
     const hydrate = async () => {
       try {
@@ -52,39 +54,23 @@ export const MedicationProvider = ({ children }: { children: ReactNode }) => {
           const remote = await loadRemotePastillas(user.id);
           setPastillas(remote);
         } else {
-          const local = await loadLocalPastillas();
-          setPastillas(local);
+          setPastillas([]);
         }
+      } catch (error) {
+        logError("MedicationProvider hydrate error", { error });
       } finally {
         setHydrated(true);
       }
     };
-    hydrate().catch((error: unknown) => {
-      logError("MedicationProvider hydrate error", { error });
-      setHydrated(true);
-    });
+
+    hydrate();
   }, [user?.id]);
 
-  useEffect(() => {
-    if (!hydrated) return;
+  //
+  // 💰 PLAN SAAS
+  //
+  const planTier: PlanTier = "free";
 
-    const checkDailyReset = async () => {
-      const next = await checkDailyResetLocal(pastillas);
-      setPastillas((prev) => {
-        if (JSON.stringify(prev) === JSON.stringify(next)) {
-          return prev;
-        }
-        return next;
-      });
-    };
-
-    checkDailyReset().catch((error: unknown) => logError("Daily reset error", { error }));
-    const id = setInterval(checkDailyReset, 60_000);
-    return () => clearInterval(id);
-  }, [hydrated, pastillas]);
-
-  
-  const planTier: PlanTier = profile?.plan_tier ?? "free";
   const limits = useMemo(
     () => ({
       maxMedications: planTier === "pro" ? 200 : 10,
@@ -94,22 +80,32 @@ export const MedicationProvider = ({ children }: { children: ReactNode }) => {
 
   const canCreateMedication = pastillas.length < limits.maxMedications;
 
+  //
+  // 🔄 REFRESH
+  //
   const refreshRemote = async () => {
-    if (!user?.id) {
-      const local = await loadLocalPastillas();
-      setPastillas(local);
-      return;
-    }
+    if (!user?.id) return;
+
     const remote = await loadRemotePastillas(user.id);
     setPastillas(remote);
   };
 
+  //
+  // ❌ REMOVE (solo UI por ahora)
+  //
   const removePastillaById = async (id: string) => {
     setPastillas((prev) => prev.filter((p) => p.id !== id));
   };
 
+  //
+  // 📊 TRACK EVENT
+  //
   const trackMedicationToggle = async (id: string, nextTomada: boolean) => {
-    await insertMedicationEvent(user?.id ?? null, id, nextTomada ? "taken" : "untaken");
+    await insertMedicationEvent(
+      user?.id ?? null,
+      id,
+      nextTomada ? "taken" : "untaken",
+    );
   };
 
   return (

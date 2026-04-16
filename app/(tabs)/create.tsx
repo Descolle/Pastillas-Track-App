@@ -4,12 +4,19 @@ import { Alert, Pressable, ScrollView, TextInput, View } from "react-native";
 
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
+import { useAuth } from "@/context/AuthContext";
 import { useMedication } from "@/context/MedicationContext";
 import { useThemeColor } from "@/hooks/use-theme-color";
+
 import { scheduleNotification } from "@/utils/notification";
 
+import { createMedicationWithSchedule } from "@/services/medicationService";
+
+import { generateTodayIntakes } from "@/api/intakes";
+
 export default function CreateMedication() {
-  const { setPastillas } = useMedication();
+  const { user } = useAuth();
+  const { refreshRemote } = useMedication();
 
   const textColor = useThemeColor({}, "text");
   const cardBg = useThemeColor(
@@ -21,6 +28,7 @@ export default function CreateMedication() {
   const [dose, setDose] = useState("");
   const [time, setTime] = useState(new Date());
   const [showPicker, setShowPicker] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const formatTime = (date: Date) => {
     const h = String(date.getHours()).padStart(2, "0");
@@ -29,6 +37,10 @@ export default function CreateMedication() {
   };
 
   const handleSave = async () => {
+    if (!user) {
+      return Alert.alert("Error", "Debes iniciar sesión");
+    }
+
     if (!name.trim()) {
       return Alert.alert("Error", "El nombre es obligatorio");
     }
@@ -38,20 +50,26 @@ export default function CreateMedication() {
     }
 
     try {
+      setLoading(true);
+
       const timeStr = formatTime(time);
 
-      const notificationId = await scheduleNotification(name, timeStr);
+      // 🔔 notificación (opcional)
+      await scheduleNotification(name, timeStr);
 
-      const nueva = {
-        id: Date.now().toString(),
-        nombre: name.trim(),
-        cantidad: Number(dose),
-        tiempo: timeStr,
-        tomada: false,
-        notificationId,
-      };
+      // 🔥 1. crear en DB
+      await createMedicationWithSchedule(
+        user.id,
+        name.trim(),
+        Number(dose),
+        timeStr,
+      );
 
-      setPastillas((prev) => [...prev, nueva]);
+      // 🔥 2. generar intakes del día
+      await generateTodayIntakes(user.id);
+
+      // 🔥 3. refrescar lista
+      await refreshRemote();
 
       Alert.alert("✅ Guardado", "Medicamento creado correctamente");
 
@@ -60,7 +78,10 @@ export default function CreateMedication() {
       setDose("");
       setTime(new Date());
     } catch (err) {
+      console.log(err);
       Alert.alert("Error", "No se pudo guardar");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -144,15 +165,16 @@ export default function CreateMedication() {
         {/* Botón */}
         <Pressable
           onPress={handleSave}
+          disabled={loading}
           style={{
-            backgroundColor: "#007AFF",
+            backgroundColor: loading ? "#999" : "#007AFF",
             padding: 16,
             borderRadius: 16,
             alignItems: "center",
           }}
         >
           <ThemedText style={{ color: "#fff", fontWeight: "bold" }}>
-            Guardar medicamento
+            {loading ? "Guardando..." : "Guardar medicamento"}
           </ThemedText>
         </Pressable>
       </ScrollView>

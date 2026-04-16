@@ -1,109 +1,29 @@
 import { supabase } from "@/lib/supabase";
 import { logError } from "@/services/observability";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export type Pastilla = {
-  id: string;
+  id: string; // schedule_id
   nombre: string;
   cantidad: number;
-  time: string; // ✅ FIX
+  time: string;
   tomada: boolean;
-  notificationId?: string;
-  updatedAt?: string;
 };
 
-const LOCAL_STORAGE_KEY = "pastillas";
-const LAST_RESET_KEY = "pastillas_last_reset_date";
-
-function localDateKey(date: Date = new Date()): string {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, "0");
-  const d = String(date.getDate()).padStart(2, "0");
-  return `${y}-${m}-${d}`;
-}
-
-function isPastilla(x: unknown): x is Pastilla {
-  if (x === null || typeof x !== "object") return false;
-  const o = x as Record<string, unknown>;
-  return (
-    typeof o.id === "string" &&
-    typeof o.nombre === "string" &&
-    typeof o.cantidad === "number" &&
-    typeof o.time === "string" &&
-    typeof o.tomada === "boolean"
-  );
-}
-
-function parsePastillas(raw: string): Pastilla[] {
-  try {
-    const data = JSON.parse(raw) as unknown;
-    if (!Array.isArray(data)) return [];
-    return data.filter(isPastilla);
-  } catch {
-    return [];
-  }
-}
-
-function resetTomadas(pastillas: Pastilla[]): Pastilla[] {
-  return pastillas.map((p) =>
-    p.tomada ? { ...p, tomada: false } : p
-  );
-}
-
-export async function loadLocalPastillas(): Promise<Pastilla[]> {
-  const raw = await AsyncStorage.getItem(LOCAL_STORAGE_KEY);
-  const loaded = raw ? parsePastillas(raw) : [];
-
-  const today = localDateKey();
-  const lastReset = await AsyncStorage.getItem(LAST_RESET_KEY);
-
-  const normalized =
-    lastReset === today ? loaded : resetTomadas(loaded);
-
-  await AsyncStorage.setItem(LAST_RESET_KEY, today);
-
-  if (lastReset !== today) {
-    await saveLocalPastillas(normalized);
-  }
-
-  return normalized;
-}
-
-export async function saveLocalPastillas(pastillas: Pastilla[]) {
-  await AsyncStorage.setItem(
-    LOCAL_STORAGE_KEY,
-    JSON.stringify(pastillas)
-  );
-}
-
-export async function checkDailyResetLocal(current: Pastilla[]) {
-  const today = localDateKey();
-  const lastReset = await AsyncStorage.getItem(LAST_RESET_KEY);
-
-  if (lastReset === today) return current;
-
-  await AsyncStorage.setItem(LAST_RESET_KEY, today);
-
-  const normalized = resetTomadas(current);
-  await saveLocalPastillas(normalized);
-
-  return normalized;
-}
-
 //
-// 🔥 LOAD DESDE SUPABASE (CORRECTO)
+// 🔥 LOAD DESDE SUPABASE
 //
-export async function loadRemotePastillas(
-  userId: string
-): Promise<Pastilla[]> {
+export async function loadRemotePastillas(userId: string): Promise<Pastilla[]> {
   try {
     const today = new Date().toISOString().split("T")[0];
 
     const { data, error } = await supabase
       .from("intakes")
-      .select(`
+      .select(
+        `
+        schedule_id,
         taken,
         schedules (
+          id,
           time,
           medications (
             id,
@@ -112,7 +32,8 @@ export async function loadRemotePastillas(
             user_id
           )
         )
-      `)
+      `,
+      )
       .eq("date", today)
       .eq("schedules.medications.user_id", userId);
 
@@ -121,13 +42,14 @@ export async function loadRemotePastillas(
       return [];
     }
 
+    console.log("📦 RAW DATA:", data);
+
     return (data ?? []).map((i: any) => ({
-      id: i.schedules.medications.id,
-      nombre: i.schedules.medications.name,
-      cantidad: i.schedules.medications.dosage,
-      time: i.schedules.time,
-      tomada: i.taken,
-      updatedAt: new Date().toISOString(),
+      id: i.schedule_id, // 🔥 IMPORTANTE
+      nombre: i.schedules?.medications?.name ?? "Sin nombre",
+      cantidad: Number(i.schedules?.medications?.dosage ?? 0),
+      time: i.schedules?.time ?? "--:--",
+      tomada: i.taken ?? false,
     }));
   } catch (error) {
     logError("loadRemotePastillas unexpected error", { error });
@@ -136,11 +58,51 @@ export async function loadRemotePastillas(
 }
 
 //
+// 🔥 CREAR MEDICAMENTO + SCHEDULE
+//
+export async function createMedicationWithSchedule(
+  userId: string,
+  nombre: string,
+  dosis: number,
+  time: string,
+) {
+  try {
+    // 1. medicamento
+    const { data: med, error: medError } = await supabase
+      .from("medications")
+      .insert({
+        name: nombre,
+        dosage: dosis, // ✅ SOLO ESTO
+        user_id: userId,
+      })
+      .select()
+      .single();
+
+    if (medError) throw medError;
+
+    // 2. schedule
+    const { data: schedule, error: schedError } = await supabase
+      .from("schedules")
+      .insert({
+        medication_id: med.id,
+        time,
+      })
+      .select()
+      .single();
+
+    if (schedError) throw schedError;
+
+    console.log("✅ CREATED:", { med, schedule });
+  } catch (error) {
+    logError("createMedicationWithSchedule error", { error });
+    throw error;
+  }
+}
+
+//
 // 🔥 MARCAR COMO TOMADA
 //
-export async function markAsTaken(
-  scheduleId: string
-) {
+export async function markAsTaken(scheduleId: string) {
   const today = new Date().toISOString().split("T")[0];
 
   const { error } = await supabase
@@ -156,26 +118,86 @@ export async function markAsTaken(
 }
 
 //
-// 🔥 INSERT EVENT (para estadísticas futuras)
+// 📊 EVENTOS
 //
 export async function insertMedicationEvent(
   userId: string | null,
   medicationId: string,
-  eventType: "taken" | "untaken"
+  eventType: "taken" | "untaken",
 ) {
   if (!userId) return;
 
-  const { error } = await supabase
-    .from("medication_events")
-    .insert({
-      user_id: userId,
-      medication_id: medicationId,
-      event_type: eventType,
-    });
+  const { error } = await supabase.from("medication_events").insert({
+    user_id: userId,
+    medication_id: medicationId,
+    event_type: eventType,
+  });
 
   if (error) {
     logError("insertMedicationEvent error", {
       error: error.message,
     });
+  }
+}
+
+export async function deleteMedication(scheduleId: string) {
+  try {
+    // 1. eliminar intake
+    await supabase.from("intakes").delete().eq("schedule_id", scheduleId);
+
+    // 2. obtener medication_id
+    const { data: sched } = await supabase
+      .from("schedules")
+      .select("medication_id")
+      .eq("id", scheduleId)
+      .single();
+
+    if (!sched) return;
+
+    // 3. eliminar schedule
+    await supabase.from("schedules").delete().eq("id", scheduleId);
+
+    // 4. eliminar medicamento
+    await supabase.from("medications").delete().eq("id", sched.medication_id);
+  } catch (error) {
+    logError("deleteMedication error", { error });
+    throw error;
+  }
+}
+export async function updateMedication(
+  scheduleId: string,
+  nombre: string,
+  dosis: number,
+  time: string,
+) {
+  try {
+    // 1. obtener medication_id
+    const { data: sched } = await supabase
+      .from("schedules")
+      .select("medication_id")
+      .eq("id", scheduleId)
+      .single();
+
+    if (!sched) throw new Error("Schedule not found");
+
+    // 2. actualizar medication
+    await supabase
+      .from("medications")
+      .update({
+        name: nombre,
+        dosage: dosis,
+      })
+      .eq("id", sched.medication_id);
+
+    // 3. actualizar schedule
+    await supabase
+      .from("schedules")
+      .update({
+        time,
+      })
+      .eq("id", scheduleId);
+  } catch (error) {
+    logError("updateMedication error", { error });
+    throw error;
   }
 }

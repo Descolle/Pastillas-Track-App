@@ -1,17 +1,14 @@
-import { supabase } from "./supabase";
+import { supabase } from "@/lib/supabase";
 
-// 🔥 Generar intakes del día
-export const generateTodayIntakes = async (userId) => {
+export const generateTodayIntakes = async (userId: string) => {
   const today = new Date().toISOString().split("T")[0];
 
   const { data: schedules, error: schedulesError } = await supabase
     .from("schedules")
-    .select(
-      `
+    .select(`
       id,
       medications!inner(user_id)
-    `,
-    )
+    `)
     .eq("medications.user_id", userId);
 
   if (schedulesError) throw schedulesError;
@@ -42,17 +39,4 @@ export const generateTodayIntakes = async (userId) => {
     .insert(newIntakes);
 
   if (insertError) throw insertError;
-};
-
-// 🔥 Marcar como tomado (FUERA de la función)
-export const markIntakeAsTaken = async (scheduleId) => {
-  const today = new Date().toISOString().split("T")[0];
-
-  const { error } = await supabase
-    .from("intakes")
-    .update({ taken: true })
-    .eq("schedule_id", scheduleId)
-    .eq("date", today);
-
-  if (error) throw error;
 };

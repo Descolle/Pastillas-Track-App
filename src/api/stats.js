@@ -1,72 +1,67 @@
-import { supabase } from "./supabase";
+import { supabase } from "../../lib/supabase";
 
-export const getTodayStats = async (userId) => {
-  const today = new Date().toISOString().split("T")[0];
+export const getWeeklyStats = async (userId) => {
+  const today = new Date();
+  const last7Days = [];
+
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(today.getDate() - i);
+    last7Days.push(d.toISOString().split("T")[0]);
+  }
 
   const { data, error } = await supabase
     .from("intakes")
     .select(
       `
+      date,
       taken,
-      schedules!inner(
-        medications!inner(user_id)
+      schedules (
+        medications (
+          user_id
+        )
       )
     `,
     )
-    .eq("date", today)
+    .in("date", last7Days)
     .eq("schedules.medications.user_id", userId);
 
   if (error) throw error;
 
-  const total = data.length;
-  const taken = data.filter((i) => i.taken).length;
-  const pending = total - taken;
+  // 📊 agrupar por día
+  const daily = last7Days.map((date) => {
+    const dayData = data.filter((d) => d.date === date);
 
-  const percentage = total > 0 ? Math.round((taken / total) * 100) : 0;
+    const total = dayData.length;
+    const taken = dayData.filter((d) => d.taken).length;
 
-  return {
-    total,
-    taken,
-    pending,
-    percentage,
-  };
-};
+    const percentage = total === 0 ? 0 : Math.round((taken / total) * 100);
 
-export const getWeeklyStats = async (userId) => {
-  const today = new Date();
-  const past7 = new Date();
-  past7.setDate(today.getDate() - 6);
-
-  const from = past7.toISOString().split("T")[0];
-  const to = today.toISOString().split("T")[0];
-
-  const { data, error } = await supabase
-    .from("intakes")
-    .select(`
-      taken,
-      date,
-      schedules!inner(
-        medications!inner(user_id)
-      )
-    `)
-    .gte("date", from)
-    .lte("date", to)
-    .eq("schedules.medications.user_id", userId);
-
-  if (error) throw error;
-
-  // agrupar por día
-  const grouped = {};
-
-  data.forEach((i) => {
-    if (!grouped[i.date]) {
-      grouped[i.date] = { total: 0, taken: 0 };
-    }
-
-    grouped[i.date].total++;
-    if (i.taken) grouped[i.date].taken++;
+    return {
+      day: new Date(date).toLocaleDateString("es-CL", {
+        weekday: "short",
+      }),
+      percentage,
+    };
   });
 
-  return grouped;
-};
+  // 📊 promedio semanal
+  const totalAll = data.length;
+  const takenAll = data.filter((d) => d.taken).length;
 
+  const percentage =
+    totalAll === 0 ? 0 : Math.round((takenAll / totalAll) * 100);
+
+  // 🔥 streak
+  let streak = 0;
+  for (let i = daily.length - 1; i >= 0; i--) {
+    if (daily[i].percentage === 100) streak++;
+    else break;
+  }
+
+  return {
+    percentage,
+    streak,
+    daily,
+  };
+};

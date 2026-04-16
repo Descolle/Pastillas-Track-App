@@ -1,10 +1,10 @@
-import * as Notifications from "expo-notifications";
+/*import * as Notifications from "expo-notifications";*/
 import { Stack } from "expo-router";
 
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { MedicationProvider } from "@/context/MedicationContext";
 
-// 🔔 Config global
+/*// 🔔 Config global
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowBanner: true,
@@ -12,7 +12,7 @@ Notifications.setNotificationHandler({
     shouldPlaySound: true,
     shouldSetBadge: false,
   }),
-});
+}); */
 
 function AppStack() {
   const { hydrated, user } = useAuth();

@@ -15,15 +15,15 @@ Notifications.setNotificationHandler({
 });
 
 function AppStack() {
-  const { hydrated, session } = useAuth();
+  const { hydrated, user } = useAuth();
   if (!hydrated) return null;
   return (
     <MedicationProvider>
       <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Protected guard={!session}>
+        <Stack.Protected guard={!user}>
           <Stack.Screen name="sign-in" />
         </Stack.Protected>
-        <Stack.Protected guard={!!session}>
+        <Stack.Protected guard={!!user}>
           <Stack.Screen name="(tabs)" />
         </Stack.Protected>
       </Stack>

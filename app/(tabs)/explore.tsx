@@ -1,11 +1,11 @@
+import { getTodayStats } from "@/api/stats";
+import { supabase } from "@/api/supabase";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
+import { useAuth } from "@/context/AuthContext";
 import { useThemeColor } from "@/hooks/use-theme-color";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
-import { getTodayStats } from "../../src/api/stats";
-import { supabase } from "../../src/api/supabase";
-import { useAuth } from "../../src/hooks/useAuth";
 
 export default function Dashboard() {
   const { user } = useAuth();

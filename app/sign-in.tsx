@@ -1,6 +1,6 @@
+import { Redirect } from "expo-router";
 import { useState } from "react";
 import { Alert, Pressable, StyleSheet, TextInput, View } from "react-native";
-import { Redirect } from "expo-router";
 
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";

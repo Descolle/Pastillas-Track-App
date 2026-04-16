@@ -50,7 +50,7 @@
     },
     "extra": {
       "EXPO_PUBLIC_SUPABASE_URL": "https://eszbvlipbytljgalptmz.supabase.co",
-      "EXPO_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_qO6NB4as71nAebSEu8_DnQ_DPIq7gAD",
+      "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVzemJ2bGlwYnl0bGpnYWxwdG16Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYyOTQ5ODcsImV4cCI6MjA5MTg3MDk4N30.Ri1f79b-CUQpqq1vPaUWxCVMHPfZGy7iliw9mPpRa2w",
       "router": {},
       "eas": {
         "projectId": "f5a0ef86-3d44-4344-a7c3-44247b217dd7"

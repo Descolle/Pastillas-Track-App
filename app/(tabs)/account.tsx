@@ -1,11 +1,10 @@
-import { useEffect, useState } from "react";
-import { ActivityIndicator, StyleSheet, View } from "react-native";
-
-import { supabase } from "../../src/api/supabase";
+import { supabase } from "@/api/supabase";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
+import { useAuth } from "@/context/AuthContext";
 import { useThemeColor } from "@/hooks/use-theme-color";
-import { useAuth } from "../../src/hooks/useAuth";
+import { useEffect, useState } from "react";
+import { ActivityIndicator, StyleSheet, View } from "react-native";
 
 export default function Dashboard() {
   const { user } = useAuth();

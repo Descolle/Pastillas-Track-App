@@ -46,17 +46,3 @@ export const createMedication = async (userId, medData) => {
   return data;
 };
 
-import { supabase } from "../api/supabase";
-
-useEffect(() => {
-  const test = async () => {
-    const { data, error } = await supabase
-      .from("medications")
-      .select("*");
-
-    console.log("DATA:", data);
-    console.log("ERROR:", error);
-  };
-
-  test();
-}, []);

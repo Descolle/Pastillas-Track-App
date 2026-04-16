@@ -13,10 +13,7 @@ import {
   insertMedicationEvent,
   loadLocalPastillas,
   loadRemotePastillas,
-  removePastilla,
-  replaceAllPastillas,
-  syncLocalToRemote,
-  type Pastilla,
+  type Pastilla
 } from "@/services/medicationService";
 import { logError } from "@/services/observability";
 import type { PlanTier } from "@/types/saas";
@@ -52,8 +49,8 @@ export const MedicationProvider = ({ children }: { children: ReactNode }) => {
     const hydrate = async () => {
       try {
         if (user?.id) {
-          const merged = await syncLocalToRemote(user.id);
-          setPastillas(merged);
+          const remote = await loadRemotePastillas(user.id);
+          setPastillas(remote);
         } else {
           const local = await loadLocalPastillas();
           setPastillas(local);
@@ -86,13 +83,7 @@ export const MedicationProvider = ({ children }: { children: ReactNode }) => {
     return () => clearInterval(id);
   }, [hydrated, pastillas]);
 
-  useEffect(() => {
-    if (!hydrated) return;
-    replaceAllPastillas(user?.id ?? null, pastillas).catch((error: unknown) =>
-      logError("save medication error", { error }),
-    );
-  }, [pastillas, hydrated, user?.id]);
-
+  
   const planTier: PlanTier = profile?.plan_tier ?? "free";
   const limits = useMemo(
     () => ({
@@ -115,7 +106,6 @@ export const MedicationProvider = ({ children }: { children: ReactNode }) => {
 
   const removePastillaById = async (id: string) => {
     setPastillas((prev) => prev.filter((p) => p.id !== id));
-    await removePastilla(user?.id ?? null, id);
   };
 
   const trackMedicationToggle = async (id: string, nextTomada: boolean) => {

@@ -1,11 +1,11 @@
 import { useFocusEffect } from "@react-navigation/native";
 import { useCallback, useEffect, useState } from "react";
 import {
-  ActivityIndicator,
-  FlatList,
-  Pressable,
-  Text,
-  View,
+    ActivityIndicator,
+    FlatList,
+    Pressable,
+    Text,
+    View,
 } from "react-native";
 
 import { generateTodayIntakes, markIntakeAsTaken } from "../api/intakes";
@@ -19,7 +19,7 @@ export default function HomeScreen() {
   const [loading, setLoading] = useState(true);
   const [initialized, setInitialized] = useState(false);
 
-  const loadDoses = async () => {
+  const loadDoses = useCallback(async () => {
     if (!user) return;
 
     try {
@@ -61,7 +61,7 @@ export default function HomeScreen() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user, initialized]);
 
   const handleTaken = async (scheduleId) => {
     try {
@@ -74,12 +74,12 @@ export default function HomeScreen() {
 
   useEffect(() => {
     loadDoses();
-  }, [user]);
+  }, [loadDoses]);
 
   useFocusEffect(
     useCallback(() => {
       loadDoses();
-    }, [user]),
+    }, [loadDoses]),
   );
 
   if (loading) {

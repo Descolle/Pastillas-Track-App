@@ -49,10 +49,8 @@
       "reactCompiler": true
     },
     "extra": {
-      "EXPO_PUBLIC_SUPABASE_URL": "https://YOUR_PROJECT.supabase.co",
-      "EXPO_PUBLIC_SUPABASE_ANON_KEY": "YOUR_SUPABASE_ANON_KEY",
-      "EXPO_PUBLIC_BILLING_API_URL": "https://YOUR_BILLING_API_URL",
-      "EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY": "pk_test_xxx",
+      "EXPO_PUBLIC_SUPABASE_URL": "https://eszbvlipbytljgalptmz.supabase.co",
+      "EXPO_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_qO6NB4as71nAebSEu8_DnQ_DPIq7gAD",
       "router": {},
       "eas": {
         "projectId": "f5a0ef86-3d44-4344-a7c3-44247b217dd7"

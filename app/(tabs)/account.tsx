@@ -1,115 +1,196 @@
-import { Alert, Pressable, StyleSheet, View } from "react-native";
+import { useEffect, useState } from "react";
+import { ActivityIndicator, StyleSheet, View } from "react-native";
 
+import { supabase } from "../../src/api/supabase";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
-import { useAuth } from "@/context/AuthContext";
-import { useMedication } from "@/context/MedicationContext";
-import { startCheckout, openBillingPortal } from "@/services/billingService";
+import { useThemeColor } from "@/hooks/use-theme-color";
+import { useAuth } from "../../src/hooks/useAuth";
 
-export default function AccountScreen() {
-  const { user, profile, signOut, refreshProfile } = useAuth();
-  const { planTier, limits } = useMedication();
+export default function Dashboard() {
+  const { user } = useAuth();
 
-  const upgrade = async () => {
-    try {
-      await startCheckout("pro");
-    } catch (error) {
-      Alert.alert("Billing no disponible", String(error));
-    }
-  };
+  const [stats, setStats] = useState({
+    total: 0,
+    taken: 0,
+    pending: 0,
+    nextDose: null as null | { name: string; time: string },
+  });
 
-  const openPortal = async () => {
-    try {
-      await openBillingPortal();
-    } catch (error) {
-      Alert.alert("Portal no disponible", String(error));
-    }
-  };
+  const [loading, setLoading] = useState(true);
+
+  const border = useThemeColor({ light: "#C6C6C8", dark: "#3A3A3C" }, "icon");
+  const cardBg = useThemeColor(
+    { light: "#FFFFFF", dark: "#2C2C2E" },
+    "background",
+  );
+
+  useEffect(() => {
+    const loadStats = async () => {
+      if (!user) return;
+
+      try {
+        const today = new Date().toISOString().split("T")[0];
+
+        // 🔥 traer intakes + relaciones
+        const { data, error } = await supabase
+          .from("intakes")
+          .select(
+            `
+            taken,
+            date,
+            schedules (
+              time,
+              medications (
+                name,
+                user_id
+              )
+            )
+          `,
+          )
+          .eq("date", today)
+          .eq("schedules.medications.user_id", user.id);
+
+        if (error) throw error;
+
+        const total = data.length;
+        const taken = data.filter((i) => i.taken).length;
+        const pending = total - taken;
+
+        // 🔥 próxima dosis
+        const now = new Date();
+
+        const next = data
+          .filter((i) => !i.taken)
+          .map((i) => {
+            const time = i.schedules.time;
+            const [h, m] = time.split(":");
+
+            const doseDate = new Date();
+            doseDate.setHours(Number(h));
+            doseDate.setMinutes(Number(m));
+            doseDate.setSeconds(0);
+
+            return {
+              name: i.schedules.medications.name,
+              time,
+              date: doseDate,
+            };
+          })
+          .filter((d) => d.date >= now)
+          .sort((a, b) => a.date.getTime() - b.date.getTime())[0];
+
+        setStats({
+          total,
+          taken,
+          pending,
+          nextDose: next ? { name: next.name, time: next.time } : null,
+        });
+      } catch (err) {
+        console.log("Error loading stats:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadStats();
+  }, [user]);
+
+  if (loading) {
+    return (
+      <ThemedView style={[styles.centered, styles.flex]} lightColor="#F2F2F7">
+        <ActivityIndicator size="large" />
+      </ThemedView>
+    );
+  }
+
+  const percentage =
+    stats.total > 0 ? Math.round((stats.taken / stats.total) * 100) : 0;
 
   return (
-    <ThemedView style={styles.root} lightColor="#F2F2F7">
-      <View style={styles.card}>
-        <ThemedText type="title">Cuenta</ThemedText>
-        <ThemedText style={styles.row}>Email: {user?.email ?? "N/A"}</ThemedText>
-        <ThemedText style={styles.row}>Plan: {planTier.toUpperCase()}</ThemedText>
-        <ThemedText style={styles.row}>
-          Límite de recordatorios: {limits.maxMedications}
+    <ThemedView style={styles.flex} lightColor="#F2F2F7">
+      <View style={styles.inner}>
+        <ThemedText type="title" style={styles.title}>
+          💊 Resumen
         </ThemedText>
-        <ThemedText style={styles.row}>
-          Estado suscripción: {profile?.stripe_subscription_status ?? "no_activa"}
-        </ThemedText>
+
+        {/* 📊 Card Estadísticas */}
+        <View
+          style={[
+            styles.card,
+            { borderColor: border, backgroundColor: cardBg },
+          ]}
+        >
+          <ThemedText type="subtitle">Hoy</ThemedText>
+
+          <ThemedText style={styles.statLine}>
+            Total: <ThemedText type="defaultSemiBold">{stats.total}</ThemedText>
+          </ThemedText>
+
+          <ThemedText style={styles.statLine}>
+            Tomadas:{" "}
+            <ThemedText type="defaultSemiBold">{stats.taken}</ThemedText>
+          </ThemedText>
+
+          <ThemedText style={styles.statLine}>
+            Pendientes:{" "}
+            <ThemedText type="defaultSemiBold">{stats.pending}</ThemedText>
+          </ThemedText>
+
+          <ThemedText style={styles.statLine}>
+            Cumplimiento:{" "}
+            <ThemedText type="defaultSemiBold">{percentage}%</ThemedText>
+          </ThemedText>
+        </View>
+
+        {/* ⏰ Card Próxima dosis */}
+        <View
+          style={[
+            styles.card,
+            { borderColor: border, backgroundColor: cardBg },
+          ]}
+        >
+          <ThemedText type="subtitle">Próxima dosis</ThemedText>
+
+          <ThemedText style={styles.next}>
+            {stats.nextDose
+              ? `${stats.nextDose.name} · ${stats.nextDose.time}`
+              : "Nada pendiente 🎉"}
+          </ThemedText>
+        </View>
       </View>
-
-      <Pressable style={styles.primary} onPress={upgrade}>
-        <ThemedText style={styles.primaryText}>Pasar a Pro</ThemedText>
-      </Pressable>
-
-      <Pressable style={styles.secondary} onPress={openPortal}>
-        <ThemedText>Gestionar suscripción</ThemedText>
-      </Pressable>
-
-      <Pressable
-        style={styles.secondary}
-        onPress={() => {
-          refreshProfile().catch(() => undefined);
-        }}
-      >
-        <ThemedText>Actualizar estado</ThemedText>
-      </Pressable>
-
-      <Pressable
-        style={styles.signOut}
-        onPress={() => {
-          signOut().catch((error) => Alert.alert("Error", String(error)));
-        }}
-      >
-        <ThemedText style={styles.signOutText}>Cerrar sesión</ThemedText>
-      </Pressable>
     </ThemedView>
   );
 }
 
 const styles = StyleSheet.create({
-  root: {
+  flex: {
     flex: 1,
-    padding: 18,
+  },
+  centered: {
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  inner: {
+    flex: 1,
+    padding: 20,
+  },
+  title: {
+    marginBottom: 20,
   },
   card: {
-    borderRadius: 14,
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#D0D0D0",
     padding: 16,
     marginBottom: 14,
-    backgroundColor: "#fff",
   },
-  row: {
+  statLine: {
     marginTop: 8,
+    fontSize: 16,
   },
-  primary: {
-    backgroundColor: "#0A84FF",
-    borderRadius: 10,
-    paddingVertical: 12,
-    marginBottom: 10,
-  },
-  primaryText: {
-    color: "#fff",
-    textAlign: "center",
-    fontWeight: "700",
-  },
-  secondary: {
-    borderColor: "#D0D0D0",
-    borderWidth: 1,
-    borderRadius: 10,
-    paddingVertical: 12,
-    alignItems: "center",
-    marginBottom: 10,
-  },
-  signOut: {
+  next: {
     marginTop: 10,
-    alignSelf: "center",
-  },
-  signOutText: {
-    color: "#C62828",
-    fontWeight: "700",
+    fontSize: 17,
+    lineHeight: 24,
   },
 });

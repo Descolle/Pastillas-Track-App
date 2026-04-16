@@ -1,7 +1,7 @@
 import { supabase } from "./supabase";
 
 export const createSchedules = async (medicationId, times) => {
-  if (times.length > 24) {
+  if (times.length > 10) {
     throw new Error("Demasiados horarios");
   }
 

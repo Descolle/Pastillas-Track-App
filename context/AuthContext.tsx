@@ -18,10 +18,18 @@ export const AuthProvider = ({ children }) => {
   // 🔥 escucha cambios de sesión
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session);
-      setUser(data.session?.user ?? null);
-      setHydrated(true);
-    });
+  const validSession = data.session;
+
+  if (validSession?.user?.email_confirmed_at) {
+    setSession(validSession);
+    setUser(validSession.user);
+  } else {
+    setSession(null);
+    setUser(null);
+  }
+
+  setHydrated(true);
+});
 
     const { data: listener } = supabase.auth.onAuthStateChange(
       (_event, session) => {

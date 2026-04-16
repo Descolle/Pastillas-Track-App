@@ -1,4 +1,4 @@
-import * as Notifications from "expo-notifications";
+/* import * as Notifications from "expo-notifications";
 import { Platform } from "react-native";
 
 const NOTIFICATION_CHANNEL_ID = "medicamentos";
@@ -63,3 +63,15 @@ export const scheduleNotification = async (nombre: string, tiempo: string) => {
 export const cancelNotification = async (id: string) => {
   await Notifications.cancelScheduledNotificationAsync(id);
 };
+*/
+export async function requestPermissions() {
+  return true;
+}
+
+export async function scheduleNotification() {
+  return null;
+}
+
+export async function cancelNotification() {
+  return;
+}

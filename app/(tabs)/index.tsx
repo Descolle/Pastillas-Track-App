@@ -1,5 +1,5 @@
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
-import { useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -13,6 +13,7 @@ import { ThemedView } from "@/components/themed-view";
 import { useAuth } from "@/context/AuthContext";
 import { useThemeColor } from "@/hooks/use-theme-color";
 import { useMedicationHomeStyles } from "@/styles/homeStyles";
+import { useFocusEffect } from "expo-router";
 
 import {
   deleteMedication,
@@ -34,29 +35,30 @@ export default function Home() {
   const [pastillas, setPastillas] = useState<Pastilla[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const load = async () => {
-      if (!user) return;
+  useFocusEffect(
+    useCallback(() => {
+      const load = async () => {
+        if (!user) return;
 
-      try {
-        setLoading(true);
+        try {
+          setLoading(true);
 
-        await generateTodayIntakes(user.id);
+          await generateTodayIntakes(user.id);
+          const data = await loadRemotePastillas(user.id);
 
-        const data = await loadRemotePastillas(user.id);
-        console.log("📦 Pastillas:", data);
+          setPastillas(data);
+        } catch (err) {
+          console.log(err);
+          Alert.alert("Error", "No se pudieron cargar las pastillas");
+        } finally {
+          setLoading(false);
+        }
+      };
 
-        setPastillas(data);
-      } catch (err) {
-        console.log(err);
-        Alert.alert("Error", "No se pudieron cargar las pastillas");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    load();
-  }, [user]);
+      load();
+    }, [user]),
+  );
+  //aca el cambio
 
   // ✅ Marcar como tomada
   const marcarTomada = async (scheduleId: string) => {

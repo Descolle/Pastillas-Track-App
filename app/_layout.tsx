@@ -6,18 +6,21 @@ import { MedicationProvider } from "@/context/MedicationContext";
 function AppStack() {
   const { loading, user } = useAuth();
 
-  // 🔥 loader real
   if (loading) return null;
 
   return (
     <MedicationProvider>
       <Stack screenOptions={{ headerShown: false }}>
-        {/* 👇 NO LOGEADO */}
-        {!user ? (
+        {/* 🔓 NO autenticado */}
+        <Stack.Protected guard={!user}>
           <Stack.Screen name="sign-in" />
-        ) : (
+          <Stack.Screen name="sign-up" />
+        </Stack.Protected>
+
+        {/* 🔐 autenticado */}
+        <Stack.Protected guard={!!user}>
           <Stack.Screen name="(tabs)" />
-        )}
+        </Stack.Protected>
       </Stack>
     </MedicationProvider>
   );

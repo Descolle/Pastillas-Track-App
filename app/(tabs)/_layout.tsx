@@ -25,7 +25,7 @@ export default function TabLayout() {
       }}
     >
       <Tabs.Screen
-        name="index"
+        name="index" //home
         options={{
           title: "Inicio",
           tabBarIcon: ({ color }) => (
@@ -33,32 +33,31 @@ export default function TabLayout() {
           ),
         }}
       />
-
       <Tabs.Screen
-        name="profile"
-        options={{
-          title: "Perfil",
-          tabBarIcon: ({ color }) => (
-            <IconSymbol size={28} name="person.fill" color={color} />
-          ),
-        }}
-      />
-
-      <Tabs.Screen
-        name="account"
-        options={{
-          title: "Cuenta",
-          tabBarIcon: ({ color }) => (
-            <IconSymbol size={28} name="person.fill" color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="create"
+        name="create" //crear pastilla
         options={{
           title: "Crear",
           tabBarIcon: ({ color }) => (
             <IconSymbol size={28} name="plus.circle.fill" color={color} />
+          ),
+        }}
+      />
+
+      <Tabs.Screen
+        name="stats" //estadísticas de pastillas
+        options={{
+          title: "Estadísticas",
+          tabBarIcon: ({ color }) => (
+            <IconSymbol size={28} name="chart.bar.fill" color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="profile" //perfil del usuario
+        options={{
+          title: "Perfil",
+          tabBarIcon: ({ color }) => (
+            <IconSymbol size={28} name="person.fill" color={color} />
           ),
         }}
       />

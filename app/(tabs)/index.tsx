@@ -1,5 +1,6 @@
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
-import { useCallback, useState } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -13,7 +14,6 @@ import { ThemedView } from "@/components/themed-view";
 import { useAuth } from "@/context/AuthContext";
 import { useThemeColor } from "@/hooks/use-theme-color";
 import { useMedicationHomeStyles } from "@/styles/homeStyles";
-import { useFocusEffect } from "expo-router";
 
 import {
   deleteMedication,
@@ -21,7 +21,7 @@ import {
   markAsTaken,
   updateMedication,
   type Pastilla,
-} from "@/services/medicationService";
+} from "../../services/medicationService";
 
 import { generateTodayIntakes } from "@/api/intakes";
 
@@ -35,49 +35,64 @@ export default function Home() {
   const [pastillas, setPastillas] = useState<Pastilla[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useFocusEffect(
-    useCallback(() => {
-      const load = async () => {
-        if (!user) return;
+  const STORAGE_KEY = "pastillas_local";
 
-        try {
-          setLoading(true);
+  // 🔥 cargar local + remoto
+  useEffect(() => {
+    const load = async () => {
+      if (!user) return;
 
-          await generateTodayIntakes(user.id);
-          const data = await loadRemotePastillas(user.id);
+      try {
+        setLoading(true);
 
-          setPastillas(data);
-        } catch (err) {
-          console.log(err);
-          Alert.alert("Error", "No se pudieron cargar las pastillas");
-        } finally {
-          setLoading(false);
+        // 1️⃣ cargar LOCAL primero
+        const local = await AsyncStorage.getItem(STORAGE_KEY);
+        if (local) {
+          setPastillas(JSON.parse(local));
         }
-      };
 
-      load();
-    }, [user]),
-  );
-  //aca el cambio
+        // 2️⃣ generar intakes (backend)
+        await generateTodayIntakes(user.id);
 
-  // ✅ Marcar como tomada
-  const marcarTomada = async (scheduleId: string) => {
-    try {
-      await markAsTaken(scheduleId);
+        // 3️⃣ cargar REMOTO
+        const remote = await loadRemotePastillas(user.id);
 
-      if (user) {
-        const updated = await loadRemotePastillas(user.id);
-        setPastillas(updated);
+        setPastillas(remote);
+
+        // 4️⃣ guardar en LOCAL
+        await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(remote));
+      } catch (err) {
+        console.log("⚠️ Offline mode:", err);
+      } finally {
+        setLoading(false);
       }
+    };
+
+    load();
+  }, [user]);
+
+  // 🔄 guardar siempre en local
+  const updateLocal = async (data: Pastilla[]) => {
+    setPastillas(data);
+    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  };
+
+  const marcarTomada = async (id: string) => {
+    try {
+      await markAsTaken(id);
+
+      const updated = pastillas.map((p) =>
+        p.id === id ? { ...p, tomada: true } : p,
+      );
+
+      await updateLocal(updated);
     } catch (err) {
-      console.log(err);
-      Alert.alert("Error", "No se pudo actualizar");
+      Alert.alert("Offline", "Se marcará cuando vuelva internet");
     }
   };
 
-  // ✅ Eliminar
   const eliminar = async (id: string) => {
-    Alert.alert("Eliminar", "¿Seguro que quieres eliminar?", [
+    Alert.alert("Eliminar", "¿Seguro?", [
       { text: "Cancelar", style: "cancel" },
       {
         text: "Eliminar",
@@ -86,37 +101,34 @@ export default function Home() {
           try {
             await deleteMedication(id);
 
-            if (user) {
-              const updated = await loadRemotePastillas(user.id);
-              setPastillas(updated);
-            }
+            const updated = pastillas.filter((p) => p.id !== id);
+            await updateLocal(updated);
           } catch {
-            Alert.alert("Error", "No se pudo eliminar");
+            Alert.alert("Offline", "Se eliminará luego");
           }
         },
       },
     ]);
   };
 
-  // ✅ Actualizar dosis
   const actualizar = async (item: Pastilla, nuevaDosis: number) => {
     try {
       await updateMedication(item.id, item.nombre, nuevaDosis, item.time);
 
-      if (user) {
-        const updated = await loadRemotePastillas(user.id);
-        setPastillas(updated);
-      }
+      const updated = pastillas.map((p) =>
+        p.id === item.id ? { ...p, cantidad: nuevaDosis } : p,
+      );
+
+      await updateLocal(updated);
     } catch {
-      Alert.alert("Error", "No se pudo actualizar");
+      Alert.alert("Offline", "Se actualizará luego");
     }
   };
 
-  // ✅ Editar (simple)
   const editar = (item: Pastilla) => {
-    Alert.alert("Editar dosis", "Selecciona una opción", [
-      { text: "1 dosis", onPress: () => actualizar(item, 1) },
-      { text: "2 dosis", onPress: () => actualizar(item, 2) },
+    Alert.alert("Editar", "Dosis", [
+      { text: "1", onPress: () => actualizar(item, 1) },
+      { text: "2", onPress: () => actualizar(item, 2) },
       { text: "Cancelar", style: "cancel" },
     ]);
   };
@@ -124,75 +136,41 @@ export default function Home() {
   if (loading) {
     return (
       <ThemedView style={styles.flex1}>
-        <View style={styles.loadingWrap}>
-          <ActivityIndicator size="large" />
-        </View>
+        <ActivityIndicator />
       </ThemedView>
     );
   }
 
   return (
-    <ThemedView style={styles.flex1} lightColor="#F2F2F7">
+    <ThemedView style={styles.flex1}>
       <FlatList
         data={pastillas}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.listContent}
-        ListHeaderComponent={
-          <ThemedText type="title" style={styles.title}>
-            💊 Pastillas de hoy
-          </ThemedText>
-        }
-        ListEmptyComponent={
-          <ThemedText style={styles.empty}>
-            No tienes recordatorios hoy
-          </ThemedText>
-        }
         renderItem={({ item }) => (
           <View style={styles.card}>
-            {/* 🔹 FILA PRINCIPAL */}
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                justifyContent: "space-between",
-              }}
-            >
-              {/* IZQUIERDA */}
-              <View style={{ flex: 1 }}>
-                <ThemedText type="defaultSemiBold" style={{ fontSize: 16 }}>
-                  {item.nombre}
-                </ThemedText>
+            <View style={styles.cardTopRow}>
+              <ThemedText>{item.nombre}</ThemedText>
 
-                {/* 🔸 DOSIS ABAJO */}
-                <ThemedText style={{ fontSize: 12, opacity: 0.6 }}>
-                  {item.cantidad} dosis
-                </ThemedText>
-              </View>
-
-              {/* CENTRO → HORA */}
-              <ThemedText style={{ marginRight: 10 }}>
-                {item.time.slice(0, 5)}
-              </ThemedText>
-
-              {/* DERECHA → ICONOS */}
-              <View style={{ flexDirection: "row", gap: 10 }}>
-                <Pressable onPress={() => marcarTomada(item.id)}>
-                  <MaterialIcons
-                    name="check-circle"
-                    size={24}
-                    color={item.tomada ? tintColor : iconMuted}
-                  />
-                </Pressable>
-
-                <Pressable onPress={() => editar(item)}>
-                  <MaterialIcons name="edit" size={22} color="blue" />
-                </Pressable>
-
-                <Pressable onPress={() => eliminar(item.id)}>
-                  <MaterialIcons name="delete" size={22} color="red" />
-                </Pressable>
-              </View>
+              <Pressable onPress={() => marcarTomada(item.id)}>
+                <MaterialIcons
+                  name="check"
+                  size={28}
+                  color={item.tomada ? tintColor : iconMuted}
+                />
+              </Pressable>
             </View>
+
+            <ThemedText>
+              {item.cantidad} dosis · {item.time}
+            </ThemedText>
+
+            <Pressable onPress={() => editar(item)}>
+              <MaterialIcons name="edit" size={22} />
+            </Pressable>
+
+            <Pressable onPress={() => eliminar(item.id)}>
+              <MaterialIcons name="delete" size={22} color="red" />
+            </Pressable>
           </View>
         )}
       />

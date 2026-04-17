@@ -1,8 +1,11 @@
 import { Stack } from "expo-router";
+import { useEffect } from "react";
 
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { MedicationProvider } from "@/context/MedicationContext";
+import { requestPermissions } from "@/utils/notification";
 
+// 🔒 navegación protegida
 function AppStack() {
   const { loading, user } = useAuth();
 
@@ -11,22 +14,26 @@ function AppStack() {
   return (
     <MedicationProvider>
       <Stack screenOptions={{ headerShown: false }}>
-        {/* 🔓 NO autenticado */}
-        <Stack.Protected guard={!user}>
-          <Stack.Screen name="sign-in" />
-          <Stack.Screen name="sign-up" />
-        </Stack.Protected>
-
-        {/* 🔐 autenticado */}
-        <Stack.Protected guard={!!user}>
+        {!user ? (
+          <>
+            <Stack.Screen name="sign-in" />
+            <Stack.Screen name="sign-up" />
+          </>
+        ) : (
           <Stack.Screen name="(tabs)" />
-        </Stack.Protected>
+        )}
       </Stack>
     </MedicationProvider>
   );
 }
 
+// 🌍 raíz de la app
 export default function RootLayout() {
+  useEffect(() => {
+    requestPermissions();
+    console.log("🔥 ROOT MOUNTED");
+  }, []);
+
   return (
     <AuthProvider>
       <AppStack />

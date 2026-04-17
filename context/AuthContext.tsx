@@ -18,8 +18,8 @@ type Profile = {
   email: string;
   nombre: string;
   apellido: string;
-  genero?: string;
   fecha_nacimiento?: string;
+  genero?: string;
   plan?: string;
 };
 
@@ -28,7 +28,6 @@ type AuthContextType = {
   profile: Profile | null;
   loading: boolean;
   signOut: () => Promise<void>;
-  refreshProfile: () => Promise<void>; // 🔥 NUEVO
 };
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -44,65 +43,94 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // 🔥 obtener perfil
-  const fetchProfile = async (userId: string) => {
-    const { data, error } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("id", userId)
-      .single();
-
-    if (error) {
-      console.log("Error profile:", error);
-      return;
-    }
-
-    setProfile(data);
-  };
-
-  // 🔥 refrescar manual
-  const refreshProfile = async () => {
-    if (!user) return;
-    await fetchProfile(user.id);
-  };
-
-  // 🔥 sesión inicial
+  // 🔥 cargar sesión inicial + validar profile
   useEffect(() => {
     const loadSession = async () => {
-      const { data } = await supabase.auth.getSession();
+      try {
+        const { data, error } = await supabase.auth.getSession();
 
-      if (data.session?.user) {
-        const u = data.session.user;
+        // ❌ sesión inválida → limpiar
+        if (error || !data.session?.user) {
+          await supabase.auth.signOut();
+          setUser(null);
+          setProfile(null);
+          setLoading(false);
+          return;
+        }
 
+        const authUser = data.session.user;
+
+        // 🔥 buscar profile real en BD
+        const { data: profileData, error: profileError } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("id", authUser.id)
+          .single();
+
+        // ❌ no existe profile → sesión inválida
+        if (profileError || !profileData) {
+          console.log("⚠️ Usuario sin profile → cerrando sesión");
+
+          await supabase.auth.signOut();
+          setUser(null);
+          setProfile(null);
+          setLoading(false);
+          return;
+        }
+
+        // ✅ todo correcto
         setUser({
-          id: u.id,
-          email: u.email,
+          id: authUser.id,
+          email: authUser.email,
         });
 
-        await fetchProfile(u.id); // 🔥 cargar profile
-      }
+        setProfile(profileData);
+      } catch (err) {
+        console.log("Error loading session:", err);
 
-      setLoading(false);
+        await supabase.auth.signOut();
+        setUser(null);
+        setProfile(null);
+      } finally {
+        setLoading(false);
+      }
     };
 
     loadSession();
 
-    // 🔥 listener auth
+    // 🔄 escuchar cambios de auth
     const { data: listener } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
-        if (session?.user) {
-          const u = session.user;
-
-          setUser({
-            id: u.id,
-            email: u.email,
-          });
-
-          await fetchProfile(u.id); // 🔥 cargar profile
-        } else {
+        if (!session?.user) {
           setUser(null);
           setProfile(null);
+          return;
         }
+
+        const authUser = session.user;
+
+        // 🔥 traer profile en tiempo real
+        const { data: profileData } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("id", authUser.id)
+          .single();
+
+        if (!profileData) {
+          console.log("⚠️ sesión sin profile → logout");
+
+          await supabase.auth.signOut();
+          setUser(null);
+          setProfile(null);
+          return;
+        }
+
+        setUser({
+          id: authUser.id,
+          email: authUser.email,
+        });
+
+        setProfile(profileData);
       },
     );
 
@@ -118,15 +146,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        profile,
-        loading,
-        signOut,
-        refreshProfile, // 🔥 exportado
-      }}
-    >
+    <AuthContext.Provider value={{ user, profile, loading, signOut }}>
       {children}
     </AuthContext.Provider>
   );

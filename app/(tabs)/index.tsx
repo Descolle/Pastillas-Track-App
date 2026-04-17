@@ -147,33 +147,49 @@ export default function Home() {
         }
         renderItem={({ item }) => (
           <View style={styles.card}>
-            <View style={styles.cardTopRow}>
-              <ThemedText type="defaultSemiBold" style={styles.cardTitle}>
-                {item.nombre}
+            {/* 🔹 FILA PRINCIPAL */}
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "space-between",
+              }}
+            >
+              {/* IZQUIERDA */}
+              <View style={{ flex: 1 }}>
+                <ThemedText type="defaultSemiBold" style={{ fontSize: 16 }}>
+                  {item.nombre}
+                </ThemedText>
+
+                {/* 🔸 DOSIS ABAJO */}
+                <ThemedText style={{ fontSize: 12, opacity: 0.6 }}>
+                  {item.cantidad} dosis
+                </ThemedText>
+              </View>
+
+              {/* CENTRO → HORA */}
+              <ThemedText style={{ marginRight: 10 }}>
+                {item.time.slice(0, 5)}
               </ThemedText>
 
-              <Pressable onPress={() => marcarTomada(item.id)}>
-                <MaterialIcons
-                  name="check"
-                  size={28}
-                  color={item.tomada ? tintColor : iconMuted}
-                />
-              </Pressable>
-            </View>
+              {/* DERECHA → ICONOS */}
+              <View style={{ flexDirection: "row", gap: 10 }}>
+                <Pressable onPress={() => marcarTomada(item.id)}>
+                  <MaterialIcons
+                    name="check-circle"
+                    size={24}
+                    color={item.tomada ? tintColor : iconMuted}
+                  />
+                </Pressable>
 
-            <ThemedText style={styles.cardMeta}>
-              {item.cantidad} dosis · {item.time}
-              {item.tomada ? " · Tomada ✅" : ""}
-            </ThemedText>
+                <Pressable onPress={() => editar(item)}>
+                  <MaterialIcons name="edit" size={22} color="blue" />
+                </Pressable>
 
-            <View style={{ flexDirection: "row", gap: 12, marginTop: 10 }}>
-              <Pressable onPress={() => editar(item)}>
-                <MaterialIcons name="edit" size={24} color="blue" />
-              </Pressable>
-
-              <Pressable onPress={() => eliminar(item.id)}>
-                <MaterialIcons name="delete" size={24} color="red" />
-              </Pressable>
+                <Pressable onPress={() => eliminar(item.id)}>
+                  <MaterialIcons name="delete" size={22} color="red" />
+                </Pressable>
+              </View>
             </View>
           </View>
         )}

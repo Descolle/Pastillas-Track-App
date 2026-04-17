@@ -1,41 +1,65 @@
-import { supabase } from "@/api/supabase";
-import type { Session, User } from "@supabase/supabase-js";
-import { createContext, useContext, useEffect, useState } from "react";
+import {
+  createContext,
+  ReactNode,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
+
+import { supabase } from "@/lib/supabase";
+
+type User = {
+  id: string;
+  email?: string;
+};
 
 type AuthContextType = {
   user: User | null;
-  session: Session | null;
-  hydrated: boolean;
+  loading: boolean;
+  signOut: () => Promise<void>;
 };
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const AuthContext = createContext<AuthContextType | null>(null);
 
-export const AuthProvider = ({ children }) => {
+export const useAuth = () => {
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error("useAuth must be used inside AuthProvider");
+  return ctx;
+};
+
+export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
-  const [hydrated, setHydrated] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  // 🔥 escucha cambios de sesión
+  // 🔥 1. cargar sesión inicial
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-  const validSession = data.session;
+    const loadSession = async () => {
+      const { data } = await supabase.auth.getSession();
 
-  if (validSession?.user?.email_confirmed_at) {
-    setSession(validSession);
-    setUser(validSession.user);
-  } else {
-    setSession(null);
-    setUser(null);
-  }
-
-  setHydrated(true);
-});
-
-    const { data: listener } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
+      if (data.session?.user) {
+        setUser({
+          id: data.session.user.id,
+          email: data.session.user.email,
+        });
       }
+
+      setLoading(false);
+    };
+
+    loadSession();
+
+    // 🔥 2. escuchar cambios de auth
+    const { data: listener } = supabase.auth.onAuthStateChange(
+      async (_event, session) => {
+        if (session?.user) {
+          setUser({
+            id: session.user.id,
+            email: session.user.email,
+          });
+        } else {
+          setUser(null);
+        }
+      },
     );
 
     return () => {
@@ -43,57 +67,14 @@ export const AuthProvider = ({ children }) => {
     };
   }, []);
 
-useEffect(() => {
-  const init = async () => {
-    const { data } = await supabase.auth.getSession();
-    const session = data.session;
-
-    setSession(session);
-    setUser(session?.user ?? null);
-
-    if (session?.user) {
-      await supabase.from("users").upsert({
-        id: session.user.id,
-        email: session.user.email,
-        plan: "free",
-      });
-    }
-
-    setHydrated(true);
+  const signOut = async () => {
+    await supabase.auth.signOut();
+    setUser(null);
   };
-
-  init();
-
-  const { data: listener } = supabase.auth.onAuthStateChange(
-    async (_event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-
-      if (session?.user) {
-        await supabase.from("users").upsert({
-          id: session.user.id,
-          email: session.user.email,
-          plan: "free",
-        });
-      }
-    }
-  );
-
-  return () => {
-    listener.subscription.unsubscribe();
-  };
-}, []);
-
 
   return (
-    <AuthContext.Provider value={{ user, session, hydrated }}>
+    <AuthContext.Provider value={{ user, loading, signOut }}>
       {children}
     </AuthContext.Provider>
   );
-};
-
-export const useAuth = (): AuthContextType => {
-  const context = useContext(AuthContext);
-  if (!context) throw new Error("useAuth must be used inside AuthProvider");
-  return context;
-};
+}

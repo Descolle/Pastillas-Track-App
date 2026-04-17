@@ -89,7 +89,7 @@ export default function CreateMedication() {
     <ThemedView style={{ flex: 1 }} lightColor="#F2F2F7">
       <ScrollView contentContainerStyle={{ padding: 20 }}>
         <ThemedText type="title" style={{ marginBottom: 20 }}>
-          ➕ Nuevo medicamento
+          💊 RecuerdaMed - Crear Pastilla
         </ThemedText>
 
         {/* Nombre */}

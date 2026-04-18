@@ -13,20 +13,10 @@ type User = {
   email?: string;
 };
 
-type Profile = {
-  id: string;
-  email: string;
-  nombre: string;
-  apellido: string;
-  fecha_nacimiento?: string;
-  genero?: string;
-  plan?: string;
-};
-
 type AuthContextType = {
   user: User | null;
-  profile: Profile | null;
   loading: boolean;
+  initialized: boolean;
   signOut: () => Promise<void>;
 };
 
@@ -40,97 +30,42 @@ export const useAuth = () => {
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [initialized, setInitialized] = useState(false);
 
-  // 🔥 cargar sesión inicial + validar profile
   useEffect(() => {
-    const loadSession = async () => {
-      try {
-        const { data, error } = await supabase.auth.getSession();
+    const load = async () => {
+      const { data } = await supabase.auth.getSession();
 
-        // ❌ sesión inválida → limpiar
-        if (error || !data.session?.user) {
-          await supabase.auth.signOut();
-          setUser(null);
-          setProfile(null);
-          setLoading(false);
-          return;
-        }
+      const sessionUser = data.session?.user;
 
-        const authUser = data.session.user;
-
-        // 🔥 buscar profile real en BD
-        const { data: profileData, error: profileError } = await supabase
-          .from("profiles")
-          .select("*")
-          .eq("id", authUser.id)
-          .single();
-
-        // ❌ no existe profile → sesión inválida
-        if (profileError || !profileData) {
-          console.log("⚠️ Usuario sin profile → cerrando sesión");
-
-          await supabase.auth.signOut();
-          setUser(null);
-          setProfile(null);
-          setLoading(false);
-          return;
-        }
-
-        // ✅ todo correcto
+      if (sessionUser) {
         setUser({
-          id: authUser.id,
-          email: authUser.email,
+          id: sessionUser.id,
+          email: sessionUser.email,
         });
-
-        setProfile(profileData);
-      } catch (err) {
-        console.log("Error loading session:", err);
-
-        await supabase.auth.signOut();
+      } else {
         setUser(null);
-        setProfile(null);
-      } finally {
-        setLoading(false);
       }
+
+      setLoading(false);
+      setInitialized(true);
     };
 
-    loadSession();
+    load();
 
-    // 🔄 escuchar cambios de auth
     const { data: listener } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
-        if (!session?.user) {
+      (_event, session) => {
+        const sessionUser = session?.user;
+
+        if (sessionUser) {
+          setUser({
+            id: sessionUser.id,
+            email: sessionUser.email,
+          });
+        } else {
           setUser(null);
-          setProfile(null);
-          return;
         }
-
-        const authUser = session.user;
-
-        // 🔥 traer profile en tiempo real
-        const { data: profileData } = await supabase
-          .from("profiles")
-          .select("*")
-          .eq("id", authUser.id)
-          .single();
-
-        if (!profileData) {
-          console.log("⚠️ sesión sin profile → logout");
-
-          await supabase.auth.signOut();
-          setUser(null);
-          setProfile(null);
-          return;
-        }
-
-        setUser({
-          id: authUser.id,
-          email: authUser.email,
-        });
-
-        setProfile(profileData);
       },
     );
 
@@ -142,11 +77,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = async () => {
     await supabase.auth.signOut();
     setUser(null);
-    setProfile(null);
   };
 
   return (
-    <AuthContext.Provider value={{ user, profile, loading, signOut }}>
+    <AuthContext.Provider value={{ user, loading, initialized, signOut }}>
       {children}
     </AuthContext.Provider>
   );

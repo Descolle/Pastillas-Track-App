@@ -1,32 +1,32 @@
-import { Stack } from "expo-router";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { MedicationProvider } from "@/context/MedicationContext";
+import { Stack } from "expo-router";
 
-function AppNavigator() {
-  const { user, loading } = useAuth();
+function AppStack() {
+  const { loading, user } = useAuth();
 
   if (loading) return null;
 
   return (
-    <Stack screenOptions={{ headerShown: false }}>
-      {!user ? (
-        <>
-          <Stack.Screen name="sign-in" />
-          <Stack.Screen name="sign-up" />
-        </>
-      ) : (
-        <Stack.Screen name="(tabs)" />
-      )}
-    </Stack>
+    <MedicationProvider>
+      <Stack screenOptions={{ headerShown: false }}>
+        {!user ? (
+          <>
+            <Stack.Screen name="sign-in" />
+            <Stack.Screen name="sign-up" />
+          </>
+        ) : (
+          <Stack.Screen name="(tabs)" />
+        )}
+      </Stack>
+    </MedicationProvider>
   );
 }
 
 export default function RootLayout() {
   return (
     <AuthProvider>
-      <MedicationProvider>
-        <AppNavigator />
-      </MedicationProvider>
+      <AppStack />
     </AuthProvider>
   );
 }

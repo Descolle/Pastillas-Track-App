@@ -14,7 +14,17 @@ export default function TabLayout() {
   }
 
   return (
-    <Tabs screenOptions={{ headerShown: false }}>
+    <Tabs
+      screenOptions={{
+        headerShown: true,
+        headerTitle: "💊 RecuerdaMed",
+        headerTitleAlign: "center",
+        headerStyle: {
+          backgroundColor: "#fff",
+        },
+        headerShadowVisible: false,
+      }}
+    >
       <Tabs.Screen name="index" options={{ title: "Inicio" }} />
       <Tabs.Screen name="create" options={{ title: "Crear" }} />
       <Tabs.Screen name="stats" options={{ title: "Estadísticas" }} />

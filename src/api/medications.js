@@ -1,4 +1,4 @@
-import { supabase } from "./supabase";
+import { supabase } from "../../lib/supabase";
 
 export const getMedications = async (userId) => {
   const { data, error } = await supabase
@@ -23,26 +23,26 @@ export const getMedications = async (userId) => {
 
 export const createMedication = async (userId, medData) => {
   const { data: user } = await supabase
-    .from("users")
+    .from("profiles") // 🔥 CAMBIO AQUÍ
     .select("plan")
     .eq("id", userId)
-    .single();
+    .single();ss
 
   const { count } = await supabase
     .from("medications")
     .select("*", { count: "exact", head: true })
     .eq("user_id", userId);
 
-  if (user.plan === "free" && count >= 5) {
+  if (user?.plan === "free" && count >= 5) {
     throw new Error("Límite FREE alcanzado");
   }
 
   const { data, error } = await supabase
     .from("medications")
-    .insert([{ ...medData, user_id: userId }]);
+    .insert([{ ...medData, user_id: userId }])
+    .select(); // 🔥 importante para devolver id
 
   if (error) throw error;
 
   return data;
 };
-

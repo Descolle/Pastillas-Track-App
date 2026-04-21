@@ -1,54 +1,74 @@
-/* import * as Notifications from "expo-notifications";
+import * as Notifications from "expo-notifications";
 import { Platform } from "react-native";
 
 const CHANNEL_ID = "medicamentos";
 
+// 🔊 comportamiento global
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: false,
+    shouldShowBanner: true,
+    shouldShowList: true,
+  }),
+});
+
+// 📱 canal Android
+async function setupChannel() {
+  if (Platform.OS !== "android") return;
+
+  await Notifications.setNotificationChannelAsync(CHANNEL_ID, {
+    name: "Recordatorios",
+    importance: Notifications.AndroidImportance.MAX,
+    vibrationPattern: [0, 250, 250, 250],
+    lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
+  });
+}
+
+// ✅ permisos
 export async function requestPermissions() {
+  await setupChannel();
+
   const { status } = await Notifications.requestPermissionsAsync();
   return status === "granted";
 }
 
-async function setupChannel() {
-  if (Platform.OS === "android") {
-    await Notifications.setNotificationChannelAsync(CHANNEL_ID, {
-      name: "Medicamentos",
-      importance: Notifications.AndroidImportance.MAX,
-    });
-  }
-}
-
-export async function scheduleNotification(nombre: string, tiempo: string) {
+// ⏰ programar notificación diaria
+export async function scheduleNotification(nombre: string, hora: string) {
   await setupChannel();
 
-  const [hour, minute] = tiempo.split(":").map(Number);
+  const [h, m] = hora.split(":").map(Number);
 
-  return await Notifications.scheduleNotificationAsync({
+  if (
+    !Number.isInteger(h) ||
+    !Number.isInteger(m) ||
+    h < 0 ||
+    h > 23 ||
+    m < 0 ||
+    m > 59
+  ) {
+    throw new Error("Hora inválida");
+  }
+
+  const id = await Notifications.scheduleNotificationAsync({
     content: {
-      title: "💊 RecuerdaMed",
+      title: "💊 Hora de tu medicamento",
       body: `Tomar ${nombre}`,
+      sound: true,
+      ...(Platform.OS === "android" ? { channelId: CHANNEL_ID } : {}),
     },
     trigger: {
-      hour,
-      minute,
-      repeats: true,
+      type: Notifications.SchedulableTriggerInputTypes.DAILY,
+      hour: h,
+      minute: m,
     },
   });
+
+  return id;
 }
 
+// ❌ cancelar
 export async function cancelNotification(id: string) {
   await Notifications.cancelScheduledNotificationAsync(id);
-}
-*/
-
-export async function requestPermissions() {
-  return true;
-}
-
-export async function scheduleNotification(nombre: string, tiempo: string) {
-  console.log("🔔 (mock) Notificación:", nombre, tiempo);
-  return null;
-}
-
-export async function cancelNotification() {
-  return;
 }

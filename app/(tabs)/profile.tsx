@@ -4,12 +4,12 @@ import { Pressable, View } from "react-native";
 
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
+import { purchaseProduct } from "@/services/payments";
 
 export default function Profile() {
-  const { profile, signOut } = useAuth();
+  const { profile, user, signOut } = useAuth();
   const router = useRouter();
 
-  // 🎂 calcular edad seguro
   const calcularEdad = (fecha?: string) => {
     if (!fecha) return null;
 
@@ -28,7 +28,6 @@ export default function Profile() {
     return edad;
   };
 
-  // ⚧ mapear género bonito
   const generoMap: any = {
     male: "Hombre",
     female: "Mujer",
@@ -43,12 +42,11 @@ export default function Profile() {
     <ThemedView style={{ flex: 1, padding: 20 }}>
       <ThemedText type="title">👤 RecuerdaMed</ThemedText>
 
-      {/* 🔄 loading */}
       {!profile ? (
         <ThemedText style={{ marginTop: 20 }}>Cargando perfil...</ThemedText>
       ) : (
         <>
-          {/* 👤 INFO CUENTA */}
+          {/* 👤 CUENTA */}
           <View style={{ marginTop: 20 }}>
             <ThemedText style={{ opacity: 0.6 }}>Cuenta</ThemedText>
 
@@ -56,10 +54,10 @@ export default function Profile() {
               {profile.nombre} {profile.apellido}
             </ThemedText>
 
-            <ThemedText style={{ opacity: 0.6 }}>{profile.email}</ThemedText>
+            <ThemedText style={{ opacity: 0.6 }}>{user?.email}</ThemedText>
           </View>
 
-          {/* 📊 INFO PERSONAL */}
+          {/* 📊 INFO */}
           <View style={{ marginTop: 20 }}>
             {edad !== null && <ThemedText>🎂 {edad} años</ThemedText>}
 
@@ -74,7 +72,7 @@ export default function Profile() {
             </ThemedText>
           </View>
 
-          {/* ✏️ EDITAR PERFIL */}
+          {/* ✏️ EDIT */}
           <Pressable
             onPress={() => router.push("/edit-profile")}
             style={{
@@ -88,6 +86,23 @@ export default function Profile() {
               Editar perfil
             </ThemedText>
           </Pressable>
+
+          {/* 💰 PRO */}
+          {profile.plan !== "pro" && (
+            <Pressable
+              onPress={() => purchaseProduct("plan_pro")}
+              style={{
+                marginTop: 20,
+                backgroundColor: "gold",
+                padding: 14,
+                borderRadius: 12,
+              }}
+            >
+              <ThemedText style={{ textAlign: "center" }}>
+                Activar PRO 🚀 ($7.000 CLP)
+              </ThemedText>
+            </Pressable>
+          )}
         </>
       )}
 

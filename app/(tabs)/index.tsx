@@ -12,8 +12,6 @@ import {
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { useAuth } from "@/context/AuthContext";
-import { useThemeColor } from "@/hooks/use-theme-color";
-import { useMedicationHomeStyles } from "@/styles/homeStyles";
 
 import {
   deleteMedication,
@@ -24,16 +22,15 @@ import {
 } from "../../services/medicationService";
 
 import { generateTodayIntakes } from "@/api/intakes";
+import { useHomeScreenStyles } from "@/hooks/use-styles";
 
 export default function Home() {
   const { user } = useAuth();
 
-  const styles = useMedicationHomeStyles();
-  const tintColor = useThemeColor({}, "tint");
-  const iconMuted = useThemeColor({}, "icon");
-
   const [pastillas, setPastillas] = useState<Pastilla[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const styles = useHomeScreenStyles();
 
   const STORAGE_KEY = "pastillas_local";
 
@@ -147,15 +144,15 @@ export default function Home() {
         data={pastillas}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
-          <View style={styles.card}>
-            <View style={styles.cardTopRow}>
-              <ThemedText>{item.nombre}</ThemedText>
+          <View style={styles.medicationCard}>
+            <View style={styles.medicationCardTopRow}>
+              <ThemedText style={styles.medicationName}>{item.nombre}</ThemedText>
 
-              <Pressable onPress={() => marcarTomada(item.id)}>
+              <Pressable onPress={() => marcarTomada(item.id)} style={styles.medicationIcon}>
                 <MaterialIcons
                   name="check"
                   size={28}
-                  color={item.tomada ? tintColor : iconMuted}
+                  color={item.tomada ? "#007AFF" : "#666666"}
                 />
               </Pressable>
             </View>

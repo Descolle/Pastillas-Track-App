@@ -1,3 +1,4 @@
+import { scheduleNotification } from "@/utils/notification";
 import { useState } from "react";
 import { Alert, Button, TextInput, View } from "react-native";
 import { createMedication } from "../api/medications";
@@ -37,6 +38,9 @@ export default function AddMedicationScreen({ navigation }) {
       // 2. Crear horarios
       if (times.length > 0) {
         await createSchedules(medicationId, times);
+      }
+      for (const time of times) {
+        await scheduleNotification(name, time);
       }
 
       Alert.alert("Éxito", "Medicamento agregado 💊");

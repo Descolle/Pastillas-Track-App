@@ -5,11 +5,13 @@ const Colors = {
     text: "#11181C",
     background: "#fff",
     tint: "#007AFF",
+    icon: "#666666",
   },
   dark: {
     text: "#ECEDEE",
     background: "#151718",
     tint: "#0A84FF",
+    icon: "#9BA1A6",
   },
 };
 

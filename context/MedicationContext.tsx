@@ -1,17 +1,17 @@
 import {
-  createContext,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-  type ReactNode,
+    createContext,
+    useContext,
+    useEffect,
+    useMemo,
+    useState,
+    type ReactNode,
 } from "react";
 
 import { useAuth } from "@/context/AuthContext";
 import {
-  insertMedicationEvent,
-  loadRemotePastillas,
-  type Pastilla,
+    insertMedicationEvent,
+    loadRemotePastillas,
+    type Pastilla,
 } from "@/services/medicationService";
 import { logError } from "@/services/observability";
 import type { PlanTier } from "@/types/saas";
@@ -69,15 +69,16 @@ export const MedicationProvider = ({ children }: { children: ReactNode }) => {
   //
   // 💰 PLAN SAAS
   //
-  const planTier: PlanTier = "free";
+  const { profile } = useAuth();
+
+  const planTier: PlanTier = "free"; // Default to free plan for now
 
   const limits = useMemo(
     () => ({
-      maxMedications: planTier === "pro" ? 200 : 10,
+      maxMedications: (planTier as string) === "pro" ? 200 : 10,
     }),
     [planTier],
   );
-
   const canCreateMedication = pastillas.length < limits.maxMedications;
 
   //

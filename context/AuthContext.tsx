@@ -7,6 +7,7 @@ import {
 } from "react";
 
 import { supabase } from "@/lib/supabase";
+import * as InAppPurchases from "expo-in-app-purchases";
 
 type User = {
   id: string;
@@ -18,7 +19,7 @@ type Profile = {
   apellido?: string;
   fecha_nacimiento?: string;
   genero?: string;
-  plan?: string;
+  plan?: "free" | "pro";
 };
 
 type AuthContextType = {
@@ -27,6 +28,7 @@ type AuthContextType = {
   loading: boolean;
   initialized: boolean;
   signOut: () => Promise<void>;
+  refreshProfile: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -43,6 +45,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [initialized, setInitialized] = useState(false);
 
+  // 🔹 cargar perfil
   const loadProfile = async (userId: string) => {
     const { data, error } = await supabase
       .from("profiles")
@@ -59,22 +62,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setProfile(data);
   };
 
+  // 🔹 sesión inicial
   useEffect(() => {
     const load = async () => {
       const { data } = await supabase.auth.getSession();
       const sessionUser = data.session?.user;
 
       if (sessionUser) {
-        const userData = {
+        setUser({
           id: sessionUser.id,
           email: sessionUser.email,
-        };
+        });
 
-        setUser(userData);
         await loadProfile(sessionUser.id);
-      } else {
-        setUser(null);
-        setProfile(null);
       }
 
       setLoading(false);
@@ -88,12 +88,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const sessionUser = session?.user;
 
         if (sessionUser) {
-          const userData = {
+          setUser({
             id: sessionUser.id,
             email: sessionUser.email,
-          };
+          });
 
-          setUser(userData);
           await loadProfile(sessionUser.id);
         } else {
           setUser(null);
@@ -107,6 +106,62 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  // 💳 COMPRAS
+  useEffect(() => {
+    if (!user) return;
+
+    const init = async () => {
+      await InAppPurchases.connectAsync();
+      await InAppPurchases.getProductsAsync(["plan_pro"]);
+    };
+
+    init();
+
+    const listener = InAppPurchases.setPurchaseListener(
+      async ({ responseCode, results }) => {
+        if (responseCode === InAppPurchases.IAPResponseCode.OK) {
+          for (const purchase of results || []) {
+            if (!purchase.acknowledged) {
+              console.log("💰 Compra:", purchase.productId);
+
+              // 🔥 LLAMADA A SUPABASE FUNCTION
+              await fetch(
+                "https://eszbvlipbytljgalptmz.supabase.co/functions/v1/verify-payment",
+                {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                  },
+                  body: JSON.stringify({
+                    userId: user.id,
+                    productId: purchase.productId,
+                    purchaseToken: purchase.purchaseToken,
+                  }),
+                }
+              );
+
+              // 🔄 refrescar perfil
+              await loadProfile(user.id);
+
+              // ✅ confirmar compra
+              await InAppPurchases.finishTransactionAsync(purchase, true);
+            }
+          }
+        }
+      },
+    );
+
+    return () => {
+      InAppPurchases.disconnectAsync();
+    };
+  }, [user]);
+
+  const refreshProfile = async () => {
+    if (user) {
+      await loadProfile(user.id);
+    }
+  };
+
   const signOut = async () => {
     await supabase.auth.signOut();
     setUser(null);
@@ -115,7 +170,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, profile, loading, initialized, signOut }}
+      value={{ user, profile, loading, initialized, signOut, refreshProfile }}
     >
       {children}
     </AuthContext.Provider>

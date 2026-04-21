@@ -41,6 +41,13 @@ export default function CreateMedication() {
       return Alert.alert("Error", "Debes iniciar sesión");
     }
 
+    if (!CreateMedication) {
+      return Alert.alert(
+        "Límite alcanzado",
+        "Plan FREE permite solo 3 medicamentos.\nActualiza a PRO 🚀",
+      );
+    }
+
     if (!name.trim()) {
       return Alert.alert("Error", "El nombre es obligatorio");
     }
@@ -54,10 +61,8 @@ export default function CreateMedication() {
 
       const timeStr = formatTime(time);
 
-      // 🔔 notificación (opcional)
       await scheduleNotification(name, timeStr);
 
-      // 🔥 1. crear en DB
       await createMedicationWithSchedule(
         user.id,
         name.trim(),
@@ -65,15 +70,12 @@ export default function CreateMedication() {
         timeStr,
       );
 
-      // 🔥 2. generar intakes del día
       await generateTodayIntakes(user.id);
 
-      // 🔥 3. refrescar lista
       await refreshRemote();
 
       Alert.alert("✅ Guardado", "Medicamento creado correctamente");
 
-      // reset
       setName("");
       setDose("");
       setTime(new Date());

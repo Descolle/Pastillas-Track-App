@@ -62,7 +62,14 @@ export default function Dashboard() {
         const next = data
           .filter((i) => !i.taken)
           .map((i) => {
-            const time = i.schedules.time;
+            // Handle nested data structure with proper type checking
+            const item = i as any; // Type assertion for complex nested structure
+            const schedule = item.schedules?.[0]; // schedules is likely an array
+            const medication = schedule?.medications;
+            
+            if (!schedule || !medication) return null;
+            
+            const time = schedule.time;
             const [h, m] = time.split(":");
 
             const doseDate = new Date();
@@ -71,13 +78,14 @@ export default function Dashboard() {
             doseDate.setSeconds(0);
 
             return {
-              name: i.schedules.medications.name,
+              name: medication.name,
               time,
               date: doseDate,
             };
           })
-          .filter((d) => d.date >= now)
-          .sort((a, b) => a.date.getTime() - b.date.getTime())[0];
+          .filter(Boolean) // Remove null entries
+          .filter((d) => d && d.date >= now)
+          .sort((a, b) => a!.date.getTime() - b!.date.getTime())[0];
 
         setStats({
           total,

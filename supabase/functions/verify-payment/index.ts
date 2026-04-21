@@ -1,7 +1,10 @@
+// @ts-ignore - Deno modules not available in main TS config
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+// @ts-ignore - Deno modules not available in main TS config
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-serve(async (req) => {
+// @ts-ignore - Deno types not available in main TS config
+serve(async (req: Request) => {
   try {
     // 🔐 solo permitir POST
     if (req.method !== "POST") {
@@ -19,13 +22,16 @@ serve(async (req) => {
       );
     }
 
-    // 🔑 cliente admin (service role)
+    // cliente admin (service role)
+    // @ts-ignore - Deno global not available in main TS config
     const supabase = createClient(
+      // @ts-ignore - Deno global not available in main TS config
       Deno.env.get("SUPABASE_URL")!,
+      // @ts-ignore - Deno global not available in main TS config
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
-    // 🧠 1. verificar si ya existe la transacción
+    // 1. verificar si ya existe la transacción
     const { data: existingPayment, error: existingError } = await supabase
       .from("payments")
       .select("id")
@@ -70,11 +76,11 @@ serve(async (req) => {
       { status: 200 },
     );
   } catch (error) {
-    console.error("❌ verify-payment error:", error);
+    console.error("verify-payment error:", error);
 
     return new Response(
       JSON.stringify({
-        error: error.message,
+        error: (error as Error).message || "Unknown error",
       }),
       { status: 500 },
     );

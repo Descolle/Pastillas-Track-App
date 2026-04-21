@@ -36,7 +36,7 @@ export const listenPurchases = (userId: string) => {
             },
             body: JSON.stringify({
               userId,
-              transactionId: purchase.transactionId,
+              purchaseToken: purchase.purchaseToken,
               productId: purchase.productId,
             }),
           },

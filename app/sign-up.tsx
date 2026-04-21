@@ -209,7 +209,7 @@ export default function SignUp() {
       </Pressable>
 
       <Pressable
-        onPress={() => router.push("/log-in")}
+        onPress={() => router.push("/sign-in")}
         style={{ marginTop: 20 }}
       >
         <ThemedText style={{ textAlign: "center" }}>Volver</ThemedText>

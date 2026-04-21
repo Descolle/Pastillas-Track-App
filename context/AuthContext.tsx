@@ -7,7 +7,7 @@ import {
 } from "react";
 
 import { supabase } from "@/lib/supabase";
-import * as InAppPurchases from "expo-in-app-purchases";
+import { deleteCurrentAccount } from "@/services/account";
 
 type User = {
   id: string;
@@ -28,6 +28,7 @@ type AuthContextType = {
   profile: Profile | null;
   loading: boolean;
   initialized: boolean;
+  deleteAccount: () => Promise<void>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 };
@@ -46,7 +47,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [initialized, setInitialized] = useState(false);
 
-  // 🔹 cargar perfil
   const loadProfile = async (userId: string) => {
     const { data, error } = await supabase
       .from("profiles")
@@ -55,7 +55,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .single();
 
     if (error) {
-      console.log("❌ error profile:", error);
+      console.log("profile error:", error);
       setProfile(null);
       return;
     }
@@ -63,7 +63,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setProfile(data);
   };
 
-  // 🔹 sesión inicial
   useEffect(() => {
     const load = async () => {
       const { data } = await supabase.auth.getSession();
@@ -107,56 +106,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  // 💳 COMPRAS
-  useEffect(() => {
-    if (!user) return;
-
-    const init = async () => {
-      await InAppPurchases.connectAsync();
-      await InAppPurchases.getProductsAsync(["plan_pro"]);
-    };
-
-    init();
-
-    const listener = InAppPurchases.setPurchaseListener(
-      async ({ responseCode, results }) => {
-        if (responseCode === InAppPurchases.IAPResponseCode.OK) {
-          for (const purchase of results || []) {
-            if (!purchase.acknowledged) {
-              console.log("💰 Compra:", purchase.productId);
-
-              // 🔥 LLAMADA A SUPABASE FUNCTION
-              await fetch(
-                "https://eszbvlipbytljgalptmz.supabase.co/functions/v1/verify-payment",
-                {
-                  method: "POST",
-                  headers: {
-                    "Content-Type": "application/json",
-                  },
-                  body: JSON.stringify({
-                    userId: user.id,
-                    productId: purchase.productId,
-                    purchaseToken: purchase.purchaseToken,
-                  }),
-                }
-              );
-
-              // 🔄 refrescar perfil
-              await loadProfile(user.id);
-
-              // ✅ confirmar compra
-              await InAppPurchases.finishTransactionAsync(purchase, true);
-            }
-          }
-        }
-      },
-    );
-
-    return () => {
-      InAppPurchases.disconnectAsync();
-    };
-  }, [user]);
-
   const refreshProfile = async () => {
     if (user) {
       await loadProfile(user.id);
@@ -169,9 +118,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setProfile(null);
   };
 
+  const deleteAccount = async () => {
+    await deleteCurrentAccount();
+
+    try {
+      await supabase.auth.signOut();
+    } catch (error) {
+      console.log("signOut after delete failed:", error);
+    }
+
+    setUser(null);
+    setProfile(null);
+  };
+
   return (
     <AuthContext.Provider
-      value={{ user, profile, loading, initialized, signOut, refreshProfile }}
+      value={{
+        user,
+        profile,
+        loading,
+        initialized,
+        deleteAccount,
+        signOut,
+        refreshProfile,
+      }}
     >
       {children}
     </AuthContext.Provider>

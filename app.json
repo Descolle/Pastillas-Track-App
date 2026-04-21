@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "pastillas-app",
+    "name": "RecuerdaMed",
     "slug": "pastillas-app",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -17,6 +17,11 @@
     },
     "android": {
       "package": "com.pastillasapp.pastillas",
+      "blockedPermissions": [
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.SYSTEM_ALERT_WINDOW",
+        "android.permission.WRITE_EXTERNAL_STORAGE"
+      ],
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/icon.png"

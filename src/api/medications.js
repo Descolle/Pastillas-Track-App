@@ -26,7 +26,7 @@ export const createMedication = async (userId, medData) => {
     .from("profiles") // 🔥 CAMBIO AQUÍ
     .select("plan")
     .eq("id", userId)
-    .single();ss
+    .single();
 
   const { count } = await supabase
     .from("medications")

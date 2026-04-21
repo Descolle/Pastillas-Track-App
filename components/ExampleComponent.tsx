@@ -1,6 +1,5 @@
 import React from "react";
 import { View, Text, Pressable, FlatList } from "react-native";
-import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { useGlobalStyles } from "@/hooks/use-styles";
 

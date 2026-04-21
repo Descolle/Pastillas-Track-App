@@ -1,6 +1,6 @@
 import { supabase } from "@/lib/supabase";
 
-export const generateTodayIntakes = async (userId: string) => {
+export const generateTodayIntakes = async (userId) => {
   const today = new Date().toISOString().split("T")[0];
 
   const { data: schedules, error: schedulesError } = await supabase

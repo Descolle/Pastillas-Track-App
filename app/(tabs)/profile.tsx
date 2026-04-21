@@ -4,7 +4,6 @@ import { Pressable, View } from "react-native";
 
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
-import { purchaseProduct } from "@/services/payments";
 
 export default function Profile() {
   const { profile, user, signOut } = useAuth();
@@ -28,7 +27,7 @@ export default function Profile() {
     return edad;
   };
 
-  const generoMap: any = {
+  const generoMap: Record<string, string> = {
     male: "Hombre",
     female: "Mujer",
     male_trans: "Hombre trans",
@@ -40,13 +39,12 @@ export default function Profile() {
 
   return (
     <ThemedView style={{ flex: 1, padding: 20 }}>
-      <ThemedText type="title">👤 RecuerdaMed</ThemedText>
+      <ThemedText type="title">RecuerdaMed</ThemedText>
 
       {!profile ? (
         <ThemedText style={{ marginTop: 20 }}>Cargando perfil...</ThemedText>
       ) : (
         <>
-          {/* 👤 CUENTA */}
           <View style={{ marginTop: 20 }}>
             <ThemedText style={{ opacity: 0.6 }}>Cuenta</ThemedText>
 
@@ -57,22 +55,20 @@ export default function Profile() {
             <ThemedText style={{ opacity: 0.6 }}>{user?.email}</ThemedText>
           </View>
 
-          {/* 📊 INFO */}
           <View style={{ marginTop: 20 }}>
-            {edad !== null && <ThemedText>🎂 {edad} años</ThemedText>}
+            {edad !== null && <ThemedText>{edad} anos</ThemedText>}
 
             {profile.genero && (
               <ThemedText>
-                ⚧ {generoMap[profile.genero] || profile.genero}
+                {generoMap[profile.genero] || profile.genero}
               </ThemedText>
             )}
 
             <ThemedText style={{ marginTop: 6 }}>
-              💎 Plan: {profile.plan || "free"}
+              Plan: {profile.plan || "free"}
             </ThemedText>
           </View>
 
-          {/* ✏️ EDIT */}
           <Pressable
             onPress={() => router.push("/edit-profile")}
             style={{
@@ -87,26 +83,43 @@ export default function Profile() {
             </ThemedText>
           </Pressable>
 
-          {/* 💰 PRO */}
+          <Pressable
+            onPress={() => router.push("/legal")}
+            style={{
+              marginTop: 20,
+              backgroundColor: "#F2F2F7",
+              padding: 14,
+              borderRadius: 12,
+            }}
+          >
+            <ThemedText style={{ textAlign: "center" }}>
+              Privacidad y datos
+            </ThemedText>
+          </Pressable>
+
+          <Pressable
+            onPress={() => router.push("/delete-account")}
+            style={{
+              marginTop: 12,
+              backgroundColor: "#FFE5E5",
+              padding: 14,
+              borderRadius: 12,
+            }}
+          >
+            <ThemedText style={{ textAlign: "center", color: "#B00020" }}>
+              Eliminar cuenta
+            </ThemedText>
+          </Pressable>
+
           {profile.plan !== "pro" && (
-            <Pressable
-              onPress={() => purchaseProduct("plan_pro")}
-              style={{
-                marginTop: 20,
-                backgroundColor: "gold",
-                padding: 14,
-                borderRadius: 12,
-              }}
-            >
-              <ThemedText style={{ textAlign: "center" }}>
-                Activar PRO 🚀 ($7.000 CLP)
-              </ThemedText>
-            </Pressable>
+            <ThemedText style={{ marginTop: 20, opacity: 0.7 }}>
+              PRO quedo deshabilitado temporalmente mientras actualizamos las
+              compras para cumplir con Google Play.
+            </ThemedText>
           )}
         </>
       )}
 
-      {/* 🚪 LOGOUT */}
       <Pressable
         onPress={signOut}
         style={{
@@ -117,7 +130,7 @@ export default function Profile() {
         }}
       >
         <ThemedText style={{ color: "#fff", textAlign: "center" }}>
-          Cerrar sesión
+          Cerrar sesion
         </ThemedText>
       </Pressable>
     </ThemedView>

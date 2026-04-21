@@ -9,20 +9,18 @@ import {
   View,
 } from "react-native";
 
+import { generateTodayIntakes } from "@/api/intakes";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { useAuth } from "@/context/AuthContext";
-
+import { useHomeScreenStyles } from "@/hooks/use-styles";
 import {
   deleteMedication,
   loadRemotePastillas,
   markAsTaken,
   updateMedication,
   type Pastilla,
-} from "../../services/medicationService";
-
-import { generateTodayIntakes } from "@/api/intakes";
-import { useHomeScreenStyles } from "@/hooks/use-styles";
+} from "@/services/medicationService";
 
 export default function Home() {
   const { user } = useAuth();
@@ -34,7 +32,6 @@ export default function Home() {
 
   const STORAGE_KEY = "pastillas_local";
 
-  // 🔥 cargar local + remoto
   useEffect(() => {
     const load = async () => {
       if (!user) return;
@@ -42,24 +39,19 @@ export default function Home() {
       try {
         setLoading(true);
 
-        // 1️⃣ cargar LOCAL primero
         const local = await AsyncStorage.getItem(STORAGE_KEY);
         if (local) {
           setPastillas(JSON.parse(local));
         }
 
-        // 2️⃣ generar intakes (backend)
         await generateTodayIntakes(user.id);
 
-        // 3️⃣ cargar REMOTO
         const remote = await loadRemotePastillas(user.id);
 
         setPastillas(remote);
-
-        // 4️⃣ guardar en LOCAL
         await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(remote));
-      } catch (err) {
-        console.log("⚠️ Offline mode:", err);
+      } catch (error) {
+        console.log("Offline mode:", error);
       } finally {
         setLoading(false);
       }
@@ -68,7 +60,6 @@ export default function Home() {
     load();
   }, [user]);
 
-  // 🔄 guardar siempre en local
   const updateLocal = async (data: Pastilla[]) => {
     setPastillas(data);
     await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(data));
@@ -83,13 +74,13 @@ export default function Home() {
       );
 
       await updateLocal(updated);
-    } catch (err) {
-      Alert.alert("Offline", "Se marcará cuando vuelva internet");
+    } catch {
+      Alert.alert("Offline", "Se marcara cuando vuelva internet");
     }
   };
 
   const eliminar = async (id: string) => {
-    Alert.alert("Eliminar", "¿Seguro?", [
+    Alert.alert("Eliminar", "Seguro?", [
       { text: "Cancelar", style: "cancel" },
       {
         text: "Eliminar",
@@ -101,7 +92,7 @@ export default function Home() {
             const updated = pastillas.filter((p) => p.id !== id);
             await updateLocal(updated);
           } catch {
-            Alert.alert("Offline", "Se eliminará luego");
+            Alert.alert("Offline", "Se eliminara luego");
           }
         },
       },
@@ -118,7 +109,7 @@ export default function Home() {
 
       await updateLocal(updated);
     } catch {
-      Alert.alert("Offline", "Se actualizará luego");
+      Alert.alert("Offline", "Se actualizara luego");
     }
   };
 
@@ -146,9 +137,14 @@ export default function Home() {
         renderItem={({ item }) => (
           <View style={styles.medicationCard}>
             <View style={styles.medicationCardTopRow}>
-              <ThemedText style={styles.medicationName}>{item.nombre}</ThemedText>
+              <ThemedText style={styles.medicationName}>
+                {item.nombre}
+              </ThemedText>
 
-              <Pressable onPress={() => marcarTomada(item.id)} style={styles.medicationIcon}>
+              <Pressable
+                onPress={() => marcarTomada(item.id)}
+                style={styles.medicationIcon}
+              >
                 <MaterialIcons
                   name="check"
                   size={28}

@@ -1,34 +1,21 @@
+import { View } from "react-native";
+
 import { ThemedText } from "@/components/themed-text";
-import { purchaseProduct } from "@/services/payments";
-import { Pressable, View } from "react-native";
 
 export default function Paywall() {
   return (
     <View style={{ flex: 1, padding: 20 }}>
-      <ThemedText type="title">🚀 RecuerdaMed PRO</ThemedText>
+      <ThemedText type="title">RecuerdaMed PRO</ThemedText>
 
       <ThemedText style={{ marginTop: 20 }}>
-        🔓 Medicamentos ilimitados
+        Estamos migrando el sistema de compras para cumplir con la version
+        vigente de Google Play Billing.
       </ThemedText>
 
-      <ThemedText>📊 Estadísticas completas</ThemedText>
-      <ThemedText>🔔 Notificaciones avanzadas</ThemedText>
-
-      <ThemedText style={{ marginTop: 20, fontSize: 18 }}>
-        $7.000 CLP (pago único)
+      <ThemedText style={{ marginTop: 12 }}>
+        Mientras tanto, la app puede publicarse como version gratuita y luego
+        reactivar PRO cuando la integracion este actualizada.
       </ThemedText>
-
-      <Pressable
-        onPress={() => purchaseProduct("plan_pro")}
-        style={{
-          marginTop: 30,
-          backgroundColor: "gold",
-          padding: 16,
-          borderRadius: 12,
-        }}
-      >
-        <ThemedText style={{ textAlign: "center" }}>Activar PRO</ThemedText>
-      </Pressable>
     </View>
   );
 }

@@ -64,30 +64,50 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
+    let isMounted = true;
+
     const load = async () => {
+      setLoading(true);
+
       const { data } = await supabase.auth.getSession();
       const sessionUser = data.session?.user;
 
+      console.log("Initial session check:", sessionUser?.email);
+
+      if (!isMounted) return;
+
       if (sessionUser) {
+        console.log("Setting initial user:", sessionUser.id, sessionUser.email);
         setUser({
           id: sessionUser.id,
           email: sessionUser.email,
         });
 
         await loadProfile(sessionUser.id);
+      } else {
+        console.log("No initial session found");
+        setUser(null);
+        setProfile(null);
       }
 
-      setLoading(false);
-      setInitialized(true);
+      if (isMounted) {
+        setLoading(false);
+        setInitialized(true);
+      }
     };
 
     load();
 
     const { data: listener } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
+        console.log("Auth state change:", _event, session?.user?.email);
+        
         const sessionUser = session?.user;
 
+        setLoading(true);
+
         if (sessionUser) {
+          console.log("Setting user:", sessionUser.id, sessionUser.email);
           setUser({
             id: sessionUser.id,
             email: sessionUser.email,
@@ -95,13 +115,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
           await loadProfile(sessionUser.id);
         } else {
+          console.log("Clearing user session");
           setUser(null);
           setProfile(null);
         }
-      },
+
+        setLoading(false);
+      }
     );
 
     return () => {
+      isMounted = false;
       listener.subscription.unsubscribe();
     };
   }, []);

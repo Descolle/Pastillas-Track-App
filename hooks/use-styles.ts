@@ -1,35 +1,48 @@
-import { useGlobalStyles, useHomeStyles, useMedicationStyles, useProfileStyles } from "@/styles/globalStyles";
+import { useGlobalStyles } from "@/styles/globalStyles";
 import { useMemo } from "react";
 
-// Type for style hooks
-type StyleHook = () => ReturnType<typeof useGlobalStyles>;
-
-// Main hook for getting styles
-export const useStyles = (styleHook?: StyleHook) => {
-  const globalStyles = useGlobalStyles();
-  const hookStyles = styleHook ? styleHook() : {};
-
-  return useMemo(() => ({
-    ...globalStyles,
-    ...hookStyles,
-  }), [globalStyles, hookStyles]);
+// 🔹 Hook base (por si quieres acceso directo)
+export const useStyles = () => {
+  return useGlobalStyles();
 };
 
 // Export global styles for direct use
 export { useGlobalStyles };
 
-// Pre-defined style hooks for easy access
-export const useHomeScreenStyles = () => useStyles(useHomeStyles);
-export const useProfileScreenStyles = () => useStyles(useProfileStyles);
-export const useMedicationScreenStyles = () => useStyles(useMedicationStyles);
+// 🔹 Home
+export const useHomeScreenStyles = () => {
+  const styles = useGlobalStyles();
 
-// Helper for creating custom style hooks
-export const createCustomStyles = (customStyles: ReturnType<typeof useGlobalStyles>) => {
-  return () => {
-    const globalStyles = useGlobalStyles();
-    return useMemo(() => ({
-      ...globalStyles,
-      ...customStyles,
-    }), [globalStyles, customStyles]);
-  };
+  return useMemo(() => ({
+    ...styles,
+
+    // 👉 estilos específicos de Home (opcional)
+    // ejemplo:
+    // header: { marginBottom: 10 },
+
+  }), [styles]);
+};
+
+// 🔹 Profile
+export const useProfileScreenStyles = () => {
+  const styles = useGlobalStyles();
+
+  return useMemo(() => ({
+    ...styles,
+
+    // 👉 estilos específicos de Profile (opcional)
+
+  }), [styles]);
+};
+
+// 🔹 Medication
+export const useMedicationScreenStyles = () => {
+  const styles = useGlobalStyles();
+
+  return useMemo(() => ({
+    ...styles,
+
+    // 👉 estilos específicos de Medication (opcional)
+
+  }), [styles]);
 };

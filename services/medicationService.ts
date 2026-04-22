@@ -92,6 +92,18 @@ export async function createMedicationWithSchedule(
 
     if (schedError) throw schedError;
 
+    // 3. Create intake for today
+    const today = new Date().toISOString().split("T")[0];
+    const { error: intakeError } = await supabase
+      .from("intakes")
+      .insert({
+        schedule_id: schedule.id,
+        date: today,
+        taken: false,
+      });
+
+    if (intakeError) throw intakeError;
+
     console.log("✅ CREATED:", { med, schedule });
   } catch (error) {
     logError("createMedicationWithSchedule error", { error });

@@ -6,6 +6,7 @@ import {
   Alert,
   FlatList,
   Pressable,
+  Text,
   View,
 } from "react-native";
 
@@ -24,30 +25,31 @@ import {
 
 export default function Home() {
   const { user } = useAuth();
+  const styles = useHomeScreenStyles();
 
   const [pastillas, setPastillas] = useState<Pastilla[]>([]);
   const [loading, setLoading] = useState(true);
-
-  const styles = useHomeScreenStyles();
 
   const STORAGE_KEY = "pastillas_local";
 
   useEffect(() => {
     const load = async () => {
-      if (!user) return;
+      if (!user) {
+        setPastillas([]);
+        setLoading(false);
+        return;
+      }
 
       try {
         setLoading(true);
 
         const local = await AsyncStorage.getItem(STORAGE_KEY);
-        if (local) {
-          setPastillas(JSON.parse(local));
-        }
+        if (local) setPastillas(JSON.parse(local));
 
         await generateTodayIntakes(user.id);
-
         const remote = await loadRemotePastillas(user.id);
 
+        console.log("Setting pastillas:", remote);
         setPastillas(remote);
         await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(remote));
       } catch (error) {
@@ -70,17 +72,17 @@ export default function Home() {
       await markAsTaken(id);
 
       const updated = pastillas.map((p) =>
-        p.id === id ? { ...p, tomada: true } : p,
+        p.id === id ? { ...p, tomada: true } : p
       );
 
       await updateLocal(updated);
     } catch {
-      Alert.alert("Offline", "Se marcara cuando vuelva internet");
+      Alert.alert("Offline", "Se marcará cuando vuelva internet");
     }
   };
 
-  const eliminar = async (id: string) => {
-    Alert.alert("Eliminar", "Seguro?", [
+  const eliminar = (id: string) => {
+    Alert.alert("Eliminar", "¿Seguro?", [
       { text: "Cancelar", style: "cancel" },
       {
         text: "Eliminar",
@@ -88,28 +90,26 @@ export default function Home() {
         onPress: async () => {
           try {
             await deleteMedication(id);
-
-            const updated = pastillas.filter((p) => p.id !== id);
-            await updateLocal(updated);
+            await updateLocal(pastillas.filter((p) => p.id !== id));
           } catch {
-            Alert.alert("Offline", "Se eliminara luego");
+            Alert.alert("Offline", "Se eliminará luego");
           }
         },
       },
     ]);
   };
 
-  const actualizar = async (item: Pastilla, nuevaDosis: number) => {
+  const actualizar = async (item: Pastilla, dosis: number) => {
     try {
-      await updateMedication(item.id, item.nombre, nuevaDosis, item.time);
+      await updateMedication(item.id, item.nombre, dosis, item.time);
 
       const updated = pastillas.map((p) =>
-        p.id === item.id ? { ...p, cantidad: nuevaDosis } : p,
+        p.id === item.id ? { ...p, cantidad: dosis } : p
       );
 
       await updateLocal(updated);
     } catch {
-      Alert.alert("Offline", "Se actualizara luego");
+      Alert.alert("Offline", "Se actualizará luego");
     }
   };
 
@@ -129,43 +129,76 @@ export default function Home() {
     );
   }
 
+  console.log("Rendering with pastillas:", pastillas, "Loading:", loading);
+
   return (
     <ThemedView style={styles.flex1}>
+      {/* Debug info */}
+      <View style={{ padding: 16, backgroundColor: '#f0f0f0' }}>
+        <Text style={{ fontSize: 16, fontWeight: 'bold' }}>
+          Medicamentos: {pastillas.length} | Loading: {loading ? 'Yes' : 'No'}
+        </Text>
+        {pastillas.length > 0 && (
+          <Text style={{ fontSize: 12, marginTop: 4 }}>
+            First item: {JSON.stringify(pastillas[0])}
+          </Text>
+        )}
+      </View>
+      
       <FlatList
         data={pastillas}
         keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
+        renderItem={({ item }) => {
+          console.log("Rendering item:", item);
+          return (
           <View style={styles.medicationCard}>
             <View style={styles.medicationCardTopRow}>
-              <ThemedText style={styles.medicationName}>
-                {item.nombre}
-              </ThemedText>
+              <View style={styles.medicationInfoBlock}>
+                <ThemedText
+                  style={[
+                    styles.medicationName,
+                    item.tomada && styles.medicationTaken,
+                  ]}
+                >
+                  {item.nombre}
+                </ThemedText>
+              </View>
 
-              <Pressable
-                onPress={() => marcarTomada(item.id)}
-                style={styles.medicationIcon}
-              >
-                <MaterialIcons
-                  name="check"
-                  size={28}
-                  color={item.tomada ? "#007AFF" : "#666666"}
-                />
-              </Pressable>
+              <View style={styles.medicationMetricBlock}>
+                <ThemedText style={styles.medicationMetricLabel}>
+                  Dosis
+                </ThemedText>
+                <ThemedText style={styles.medicationMetricValue}>
+                  {item.cantidad}
+                </ThemedText>
+              </View>
+
+              <View style={styles.medicationMetricBlock}>
+                <ThemedText style={styles.medicationMetricLabel}>
+                  Hora
+                </ThemedText>
+                <ThemedText style={styles.medicationMetricValue}>
+                  {item.time}
+                </ThemedText>
+              </View>
+
+              <View style={styles.medicationActions}>
+                <Pressable onPress={() => marcarTomada(item.id)}>
+                  <MaterialIcons name="check" size={22} />
+                </Pressable>
+
+                <Pressable onPress={() => editar(item)}>
+                  <MaterialIcons name="edit" size={20} />
+                </Pressable>
+
+                <Pressable onPress={() => eliminar(item.id)}>
+                  <MaterialIcons name="delete" size={20} />
+                </Pressable>
+              </View>
             </View>
-
-            <ThemedText>
-              {item.cantidad} dosis · {item.time}
-            </ThemedText>
-
-            <Pressable onPress={() => editar(item)}>
-              <MaterialIcons name="edit" size={22} />
-            </Pressable>
-
-            <Pressable onPress={() => eliminar(item.id)}>
-              <MaterialIcons name="delete" size={22} color="red" />
-            </Pressable>
           </View>
-        )}
+          );
+        }}
       />
     </ThemedView>
   );

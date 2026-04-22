@@ -1,13 +1,70 @@
-import { useAuth } from "@/context/AuthContext";
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { useRouter } from "expo-router";
-import { Pressable, View } from "react-native";
+import { useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  Pressable,
+  ScrollView,
+  View,
+} from "react-native";
 
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
+import { useAuth } from "@/context/AuthContext";
+import { getWeeklyStats } from "@/src/api/stats";
+
+type WeeklyStats = {
+  percentage: number;
+  streak: number;
+  daily: {
+    day: string;
+    percentage: number;
+  }[];
+};
+
+const Bar = ({ value }: { value: number }) => {
+  return (
+    <View
+      style={{
+        width: 20,
+        height: Math.max(10, value * 1.5),
+        backgroundColor: "#7CA8F8",
+        borderRadius: 6,
+        marginHorizontal: 4,
+      }}
+    />
+  );
+};
 
 export default function Profile() {
   const { profile, user, signOut } = useAuth();
   const router = useRouter();
+
+  const [stats, setStats] = useState<WeeklyStats | null>(null);
+  const [statsLoading, setStatsLoading] = useState(true);
+
+  useEffect(() => {
+    const loadStats = async () => {
+      if (!user) {
+        setStats(null);
+        setStatsLoading(false);
+        return;
+      }
+
+      try {
+        setStatsLoading(true);
+        const data = await getWeeklyStats(user.id);
+        setStats(data);
+      } catch (error) {
+        console.log("profile stats error:", error);
+        setStats(null);
+      } finally {
+        setStatsLoading(false);
+      }
+    };
+
+    loadStats();
+  }, [user]);
 
   const calcularEdad = (fecha?: string) => {
     if (!fecha) return null;
@@ -38,101 +95,214 @@ export default function Profile() {
   const edad = calcularEdad(profile?.fecha_nacimiento);
 
   return (
-    <ThemedView style={{ flex: 1, padding: 20 }}>
-      <ThemedText type="title">RecuerdaMed</ThemedText>
+    <ThemedView style={{ flex: 1 }} lightColor="#F7F3EC">
+      <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 40 }}>
+        <ThemedText type="title">Profile</ThemedText>
 
-      {!profile ? (
-        <ThemedText style={{ marginTop: 20 }}>Cargando perfil...</ThemedText>
-      ) : (
-        <>
-          <View style={{ marginTop: 20 }}>
-            <ThemedText style={{ opacity: 0.6 }}>Cuenta</ThemedText>
+        {!profile ? (
+          <ThemedText style={{ marginTop: 20 }}>Cargando perfil...</ThemedText>
+        ) : (
+          <>
+            <View
+              style={{
+                backgroundColor: "#FFF7E8",
+                padding: 20,
+                borderRadius: 22,
+                marginTop: 20,
+                borderWidth: 1,
+                borderColor: "#F0D9A7",
+              }}
+            >
+              <View
+                style={{
+                  width: 68,
+                  height: 68,
+                  borderRadius: 34,
+                  backgroundColor: "#F6B26B",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  marginBottom: 16,
+                }}
+              >
+                <MaterialIcons name="person" size={34} color="#FFFFFF" />
+              </View>
 
-            <ThemedText style={{ marginTop: 6, fontSize: 20 }}>
-              {profile.nombre} {profile.apellido}
-            </ThemedText>
-
-            <ThemedText style={{ opacity: 0.6 }}>{user?.email}</ThemedText>
-          </View>
-
-          <View style={{ marginTop: 20 }}>
-            {edad !== null && <ThemedText>{edad} anos</ThemedText>}
-
-            {profile.genero && (
-              <ThemedText>
-                {generoMap[profile.genero] || profile.genero}
+              <ThemedText type="subtitle">
+                {profile.nombre} {profile.apellido}
               </ThemedText>
-            )}
 
-            <ThemedText style={{ marginTop: 6 }}>
-              Plan: {profile.plan || "free"}
-            </ThemedText>
-          </View>
+              <ThemedText style={{ opacity: 0.65 }}>{user?.email}</ThemedText>
 
-          <Pressable
-            onPress={() => router.push("/edit-profile")}
-            style={{
-              marginTop: 30,
-              backgroundColor: "#007AFF",
-              padding: 14,
-              borderRadius: 12,
-            }}
-          >
-            <ThemedText style={{ color: "#fff", textAlign: "center" }}>
-              Editar perfil
-            </ThemedText>
-          </Pressable>
+              <View style={{ marginTop: 16, gap: 6 }}>
+                {edad !== null && <ThemedText>{edad} anos</ThemedText>}
+                {profile.genero && (
+                  <ThemedText>
+                    {generoMap[profile.genero] || profile.genero}
+                  </ThemedText>
+                )}
+                <ThemedText>Plan: {profile.plan || "free"}</ThemedText>
+              </View>
+            </View>
 
-          <Pressable
-            onPress={() => router.push("/legal")}
-            style={{
-              marginTop: 20,
-              backgroundColor: "#F2F2F7",
-              padding: 14,
-              borderRadius: 12,
-            }}
-          >
-            <ThemedText style={{ textAlign: "center" }}>
-              Privacidad y datos
-            </ThemedText>
-          </Pressable>
+            <View
+              style={{
+                backgroundColor: "#EDF5FF",
+                padding: 20,
+                borderRadius: 22,
+                marginTop: 16,
+                borderWidth: 1,
+                borderColor: "#CFE1FA",
+              }}
+            >
+              <ThemedText type="subtitle">Tu progreso</ThemedText>
 
-          <Pressable
-            onPress={() => router.push("/delete-account")}
-            style={{
-              marginTop: 12,
-              backgroundColor: "#FFE5E5",
-              padding: 14,
-              borderRadius: 12,
-            }}
-          >
-            <ThemedText style={{ textAlign: "center", color: "#B00020" }}>
-              Eliminar cuenta
-            </ThemedText>
-          </Pressable>
+              {statsLoading ? (
+                <View style={{ paddingVertical: 24 }}>
+                  <ActivityIndicator />
+                </View>
+              ) : !stats ? (
+                <ThemedText style={{ marginTop: 12 }}>
+                  Aun no hay estadisticas disponibles.
+                </ThemedText>
+              ) : (
+                <>
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      gap: 12,
+                      marginTop: 16,
+                    }}
+                  >
+                    <View
+                      style={{
+                        flex: 1,
+                        backgroundColor: "#FFFFFF",
+                        padding: 16,
+                        borderRadius: 16,
+                      }}
+                    >
+                      <ThemedText style={{ opacity: 0.7 }}>
+                        Cumplimiento semanal
+                      </ThemedText>
+                      <ThemedText style={{ fontSize: 30, fontWeight: "700" }}>
+                        {stats.percentage}%
+                      </ThemedText>
+                    </View>
 
-          {profile.plan !== "pro" && (
-            <ThemedText style={{ marginTop: 20, opacity: 0.7 }}>
-              PRO quedo deshabilitado temporalmente mientras actualizamos las
-              compras para cumplir con Google Play.
-            </ThemedText>
-          )}
-        </>
-      )}
+                    <View
+                      style={{
+                        flex: 1,
+                        backgroundColor: "#FDF1E3",
+                        padding: 16,
+                        borderRadius: 16,
+                      }}
+                    >
+                      <ThemedText style={{ opacity: 0.7 }}>
+                        Racha actual
+                      </ThemedText>
+                      <ThemedText style={{ fontSize: 30, fontWeight: "700" }}>
+                        {stats.streak}
+                      </ThemedText>
+                    </View>
+                  </View>
 
-      <Pressable
-        onPress={signOut}
-        style={{
-          marginTop: 20,
-          backgroundColor: "red",
-          padding: 14,
-          borderRadius: 12,
-        }}
-      >
-        <ThemedText style={{ color: "#fff", textAlign: "center" }}>
-          Cerrar sesion
-        </ThemedText>
-      </Pressable>
+                  <View style={{ marginTop: 20 }}>
+                    <ThemedText type="defaultSemiBold">
+                      Ultimos 7 dias
+                    </ThemedText>
+
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "flex-end",
+                        justifyContent: "space-around",
+                        height: 120,
+                        marginTop: 14,
+                      }}
+                    >
+                      {stats.daily.map((day) => (
+                        <Bar key={day.day} value={day.percentage} />
+                      ))}
+                    </View>
+
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        justifyContent: "space-around",
+                        marginTop: 8,
+                      }}
+                    >
+                      {stats.daily.map((day) => (
+                        <ThemedText key={day.day} style={{ fontSize: 10 }}>
+                          {day.day}
+                        </ThemedText>
+                      ))}
+                    </View>
+                  </View>
+                </>
+              )}
+            </View>
+
+            <Pressable
+              onPress={() => router.push("/edit-profile")}
+              style={{
+                marginTop: 20,
+                backgroundColor: "#CFE1FA",
+                padding: 14,
+                borderRadius: 16,
+              }}
+            >
+              <ThemedText style={{ textAlign: "center", color: "#173B67" }}>
+                Editar perfil
+              </ThemedText>
+            </Pressable>
+
+            <Pressable
+              onPress={() => router.push("/legal")}
+              style={{
+                marginTop: 12,
+                backgroundColor: "#FFFFFF",
+                padding: 14,
+                borderRadius: 16,
+                borderWidth: 1,
+                borderColor: "#E9E0D5",
+              }}
+            >
+              <ThemedText style={{ textAlign: "center" }}>
+                Privacidad y datos
+              </ThemedText>
+            </Pressable>
+
+            <Pressable
+              onPress={() => router.push("/delete-account")}
+              style={{
+                marginTop: 12,
+                backgroundColor: "#FCE8E6",
+                padding: 14,
+                borderRadius: 16,
+              }}
+            >
+              <ThemedText style={{ textAlign: "center", color: "#B42318" }}>
+                Eliminar cuenta
+              </ThemedText>
+            </Pressable>
+          </>
+        )}
+
+        <Pressable
+          onPress={signOut}
+          style={{
+            marginTop: 20,
+            backgroundColor: "#E7EEF7",
+            padding: 14,
+            borderRadius: 16,
+          }}
+        >
+          <ThemedText style={{ color: "#173B67", textAlign: "center" }}>
+            Cerrar sesion
+          </ThemedText>
+        </Pressable>
+      </ScrollView>
     </ThemedView>
   );
 }

@@ -1,11 +1,18 @@
-import { supabase } from "@/lib/supabase";
+import DateTimePicker from "@react-native-community/datetimepicker";
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { Alert, Platform, Pressable, TextInput, View } from "react-native";
+import {
+  Alert,
+  Platform,
+  Pressable,
+  ScrollView,
+  TextInput,
+  View,
+} from "react-native";
 
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
-import DateTimePicker from "@react-native-community/datetimepicker";
+import { supabase } from "@/lib/supabase";
 
 export default function SignUp() {
   const router = useRouter();
@@ -19,6 +26,16 @@ export default function SignUp() {
   const [password, setPassword] = useState("");
   const [genero, setGenero] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const inputStyle = {
+    marginTop: 14,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 14,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    color: "#111111",
+    fontSize: 16,
+  } as const;
 
   const handleSignUp = async () => {
     if (
@@ -42,7 +59,6 @@ export default function SignUp() {
     try {
       setLoading(true);
 
-      // 🔥 1. Crear usuario en auth
       const { data, error } = await supabase.auth.signUp({
         email: email.trim(),
         password,
@@ -56,7 +72,6 @@ export default function SignUp() {
         throw new Error("No se pudo obtener el usuario");
       }
 
-      // 🔥 2. Crear profile
       const { error: profileError } = await supabase.from("profiles").upsert({
         id: userId,
         email,
@@ -69,12 +84,8 @@ export default function SignUp() {
       });
 
       if (profileError) throw profileError;
-      if (!fechaNacimiento) {
-        Alert.alert("Error", "Selecciona tu fecha de nacimiento");
-        return;
-      }
-      Alert.alert("Cuenta creada", "Ahora puedes iniciar sesión");
 
+      Alert.alert("Cuenta creada", "Ahora puedes iniciar sesion");
       router.replace("/sign-in");
     } catch (err: any) {
       Alert.alert("Error", err.message);
@@ -92,128 +103,167 @@ export default function SignUp() {
   };
 
   return (
-    <ThemedView style={{ flex: 1, padding: 20 }}>
-      <ThemedText type="title">📝 Crear cuenta</ThemedText>
-
-      <TextInput
-        placeholder="Nombre"
-        value={nombre}
-        onChangeText={setNombre}
-        style={{ marginTop: 20, borderBottomWidth: 1, padding: 8 }}
-      />
-
-      <TextInput
-        placeholder="Apellido"
-        value={apellido}
-        onChangeText={setApellido}
-        style={{ marginTop: 10, borderBottomWidth: 1, padding: 8 }}
-      />
-
-      <TextInput
-        placeholder="Correo"
-        value={email}
-        onChangeText={setEmail}
-        autoCapitalize="none"
-        style={{ marginTop: 10, borderBottomWidth: 1, padding: 8 }}
-      />
-
-      <TextInput
-        placeholder="Confirmar correo"
-        value={confirmEmail}
-        onChangeText={setConfirmEmail}
-        autoCapitalize="none"
-        style={{ marginTop: 10, borderBottomWidth: 1, padding: 8 }}
-      />
-
-      <TextInput
-        placeholder="Contraseña"
-        value={password}
-        onChangeText={setPassword}
-        secureTextEntry
-        style={{ marginTop: 10, borderBottomWidth: 1, padding: 8 }}
-      />
-
-      <View style={{ marginTop: 20 }}>
-        <ThemedText style={{ marginBottom: 10 }}>
-          Fecha de nacimiento
-        </ThemedText>
-
-        <Pressable
-          onPress={() => setShowPicker(true)}
+    <ThemedView
+      style={{ flex: 1 }}
+      lightColor="#123B6A"
+      darkColor="#0B2440"
+    >
+      <ScrollView contentContainerStyle={{ padding: 24, paddingBottom: 40 }}>
+        <View
           style={{
-            padding: 12,
+            backgroundColor: "rgba(255,255,255,0.08)",
+            borderRadius: 24,
+            padding: 24,
             borderWidth: 1,
-            borderRadius: 10,
+            borderColor: "rgba(255,255,255,0.18)",
           }}
         >
-          <ThemedText>
-            {fechaNacimiento
-              ? fechaNacimiento.toLocaleDateString()
-              : "Seleccionar fecha"}
+          <ThemedText type="title" style={{ color: "#FFFFFF" }}>
+            Crear cuenta
           </ThemedText>
-        </Pressable>
 
-        {showPicker && (
-          <DateTimePicker
-            value={fechaNacimiento || new Date(2000, 0, 1)}
-            mode="date"
-            display={Platform.OS === "ios" ? "spinner" : "default"}
-            onChange={onChangeDate}
-            maximumDate={new Date()} // no futuras
+          <ThemedText
+            style={{ color: "rgba(255,255,255,0.82)", marginTop: 10 }}
+          >
+            Completa tus datos para empezar a registrar tus medicamentos.
+          </ThemedText>
+
+          <TextInput
+            placeholder="Nombre"
+            placeholderTextColor="#6B7280"
+            value={nombre}
+            onChangeText={setNombre}
+            style={inputStyle}
           />
-        )}
-      </View>
 
-      <View style={{ marginTop: 20 }}>
-        <ThemedText style={{ marginBottom: 10 }}>Género</ThemedText>
-        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}>
-          {["Hombre", "Mujer", "Hombre trans", "Mujer trans", "Otro"].map(
-            (g) => (
-              <Pressable
-                key={g}
-                onPress={() => setGenero(g)}
-                style={{
-                  paddingVertical: 8,
-                  paddingHorizontal: 14,
-                  borderRadius: 20,
-                  borderWidth: 1,
-                  borderColor: genero === g ? "#007AFF" : "#ccc",
-                  backgroundColor: genero === g ? "#007AFF" : "transparent",
-                }}
-              >
-                <ThemedText
-                  style={{
-                    color: genero === g ? "#fff" : "#000",
-                  }}
-                >
-                  {g}
-                </ThemedText>
-              </Pressable>
-            ),
-          )}
+          <TextInput
+            placeholder="Apellido"
+            placeholderTextColor="#6B7280"
+            value={apellido}
+            onChangeText={setApellido}
+            style={inputStyle}
+          />
+
+          <TextInput
+            placeholder="Correo"
+            placeholderTextColor="#6B7280"
+            value={email}
+            onChangeText={setEmail}
+            autoCapitalize="none"
+            keyboardType="email-address"
+            style={inputStyle}
+          />
+
+          <TextInput
+            placeholder="Confirmar correo"
+            placeholderTextColor="#6B7280"
+            value={confirmEmail}
+            onChangeText={setConfirmEmail}
+            autoCapitalize="none"
+            keyboardType="email-address"
+            style={inputStyle}
+          />
+
+          <TextInput
+            placeholder="Contrasena"
+            placeholderTextColor="#6B7280"
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry
+            style={inputStyle}
+          />
+
+          <View style={{ marginTop: 22 }}>
+            <ThemedText style={{ color: "#FFFFFF", marginBottom: 10 }}>
+              Fecha de nacimiento
+            </ThemedText>
+
+            <Pressable
+              onPress={() => setShowPicker(true)}
+              style={{
+                paddingVertical: 12,
+                paddingHorizontal: 14,
+                backgroundColor: "#FFFFFF",
+                borderRadius: 14,
+              }}
+            >
+              <ThemedText style={{ color: "#111111" }}>
+                {fechaNacimiento
+                  ? fechaNacimiento.toLocaleDateString()
+                  : "Seleccionar fecha"}
+              </ThemedText>
+            </Pressable>
+
+            {showPicker && (
+              <DateTimePicker
+                value={fechaNacimiento || new Date(2000, 0, 1)}
+                mode="date"
+                display={Platform.OS === "ios" ? "spinner" : "default"}
+                onChange={onChangeDate}
+                maximumDate={new Date()}
+              />
+            )}
+          </View>
+
+          <View style={{ marginTop: 22 }}>
+            <ThemedText style={{ color: "#FFFFFF", marginBottom: 10 }}>
+              Genero
+            </ThemedText>
+
+            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}>
+              {["Hombre", "Mujer", "Hombre trans", "Mujer trans", "Otro"].map(
+                (g) => (
+                  <Pressable
+                    key={g}
+                    onPress={() => setGenero(g)}
+                    style={{
+                      paddingVertical: 8,
+                      paddingHorizontal: 14,
+                      borderRadius: 20,
+                      borderWidth: 1.5,
+                      borderColor:
+                        genero === g ? "#FFFFFF" : "rgba(255,255,255,0.45)",
+                      backgroundColor:
+                        genero === g ? "rgba(255,255,255,0.18)" : "transparent",
+                    }}
+                  >
+                    <ThemedText style={{ color: "#FFFFFF" }}>{g}</ThemedText>
+                  </Pressable>
+                ),
+              )}
+            </View>
+          </View>
+
+          <Pressable
+            onPress={handleSignUp}
+            style={{
+              marginTop: 30,
+              backgroundColor: "#FFFFFF",
+              paddingVertical: 15,
+              borderRadius: 14,
+            }}
+          >
+            <ThemedText
+              style={{
+                color: "#123B6A",
+                textAlign: "center",
+                fontWeight: "700",
+              }}
+            >
+              {loading ? "Creando..." : "Crear cuenta"}
+            </ThemedText>
+          </Pressable>
+
+          <Pressable
+            onPress={() => router.push("/sign-in")}
+            style={{ marginTop: 18 }}
+          >
+            <ThemedText style={{ textAlign: "center", color: "#FFFFFF" }}>
+              Volver a iniciar sesion
+            </ThemedText>
+          </Pressable>
         </View>
-      </View>
-
-      <Pressable
-        onPress={handleSignUp}
-        style={{
-          marginTop: 30,
-          backgroundColor: "#007AFF",
-          padding: 14,
-          borderRadius: 10,
-        }}
-      >
-        <ThemedText style={{ color: "#fff", textAlign: "center" }}>
-          {loading ? "Creando..." : "Crear cuenta"}
-        </ThemedText>
-      </Pressable>
-
-      <Pressable
-        onPress={() => router.push("/sign-in")}
-        style={{ marginTop: 20 }}
-      >
-        <ThemedText style={{ textAlign: "center" }}>Volver</ThemedText>
-      </Pressable>
+      </ScrollView>
     </ThemedView>
   );
 }

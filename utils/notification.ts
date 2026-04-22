@@ -3,16 +3,24 @@ import { Platform } from "react-native";
 
 const CHANNEL_ID = "medicamentos";
 
-// 🔊 comportamiento global
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: false,
-    shouldShowBanner: true,
-    shouldShowList: true,
-  }),
-});
+let handlerInitialized = false;
+
+// 🔊 inicializar handler SOLO cuando la app esté lista
+export function initNotifications() {
+  if (handlerInitialized) return;
+
+  Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldShowAlert: true,
+      shouldPlaySound: true,
+      shouldSetBadge: false,
+      shouldShowBanner: true,
+      shouldShowList: true,
+    }),
+  });
+
+  handlerInitialized = true;
+}
 
 // 📱 canal Android
 async function setupChannel() {
@@ -51,7 +59,7 @@ export async function scheduleNotification(nombre: string, hora: string) {
     throw new Error("Hora inválida");
   }
 
-  const id = await Notifications.scheduleNotificationAsync({
+  return await Notifications.scheduleNotificationAsync({
     content: {
       title: "💊 Hora de tu medicamento",
       body: `Tomar ${nombre}`,
@@ -64,8 +72,6 @@ export async function scheduleNotification(nombre: string, hora: string) {
       minute: m,
     },
   });
-
-  return id;
 }
 
 // ❌ cancelar

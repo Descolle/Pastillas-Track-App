@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RecuerdaMed - Promo Graphic</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        
+        .promo-graphic {
+            width: 180px;
+            height: 120px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 4px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .app-icon-mini {
+            width: 40px;
+            height: 40px;
+            background: white;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+        
+        .pill-mini {
+            width: 16px;
+            height: 16px;
+            background: #4CAF50;
+            border-radius: 4px;
+            position: absolute;
+            box-shadow: 0 1px 3px rgba(76, 175, 80, 0.3);
+        }
+        
+        .pill-mini:nth-child(1) {
+            top: -4px;
+            right: -6px;
+            background: #FF9800;
+            width: 14px;
+            height: 14px;
+        }
+        
+        .pill-mini:nth-child(2) {
+            bottom: -3px;
+            left: -5px;
+            background: #2196F3;
+            width: 14px;
+            height: 14px;
+        }
+        
+        .app-name {
+            position: absolute;
+            bottom: 8px;
+            color: white;
+            font-size: 11px;
+            font-weight: 700;
+            text-align: center;
+            width: 100%;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.3);
+        }
+        
+        .decorative-circle {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.1);
+        }
+        
+        .decorative-circle:nth-child(1) {
+            width: 40px;
+            height: 40px;
+            top: -20px;
+            left: -20px;
+        }
+        
+        .decorative-circle:nth-child(2) {
+            width: 25px;
+            height: 25px;
+            bottom: -12px;
+            right: -12px;
+        }
+        
+        @media print {
+            body {
+                padding: 0;
+                background: white;
+            }
+            .promo-graphic {
+                box-shadow: none;
+                border-radius: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="promo-graphic">
+        <div class="decorative-circle"></div>
+        <div class="decorative-circle"></div>
+        
+        <div class="app-icon-mini">
+            <div class="pill-mini"></div>
+            <div class="pill-mini"></div>
+        </div>
+        
+        <div class="app-name">RecuerdaMed</div>
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(() => {
+                console.log('Promo graphic ready for screenshot');
+            }, 500);
+        });
+    </script>
+</body>
+</html>

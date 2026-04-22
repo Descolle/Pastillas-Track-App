@@ -2,10 +2,10 @@ import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
-  ActivityIndicator,
-  Pressable,
-  ScrollView,
-  View,
+    ActivityIndicator,
+    Pressable,
+    ScrollView,
+    View,
 } from "react-native";
 
 import { ThemedText } from "@/components/themed-text";
@@ -97,10 +97,10 @@ export default function Profile() {
   return (
     <ThemedView style={{ flex: 1 }} lightColor="#F7F3EC">
       <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 40 }}>
-        <ThemedText type="title">Profile</ThemedText>
+        <ThemedText type="title" style={{ color: "#fdfafa" }}>PERFIL</ThemedText>
 
         {!profile ? (
-          <ThemedText style={{ marginTop: 20 }}>Cargando perfil...</ThemedText>
+          <ThemedText style={{ marginTop: 20, color: "#000000" }}>Cargando perfil...</ThemedText>
         ) : (
           <>
             <View
@@ -127,20 +127,20 @@ export default function Profile() {
                 <MaterialIcons name="person" size={34} color="#FFFFFF" />
               </View>
 
-              <ThemedText type="subtitle">
+              <ThemedText type="subtitle" style={{ color: "#000000" }}>
                 {profile.nombre} {profile.apellido}
               </ThemedText>
 
-              <ThemedText style={{ opacity: 0.65 }}>{user?.email}</ThemedText>
+              <ThemedText style={{ opacity: 0.65, color: "#000000" }}>{user?.email}</ThemedText>
 
               <View style={{ marginTop: 16, gap: 6 }}>
-                {edad !== null && <ThemedText>{edad} anos</ThemedText>}
+                {edad !== null && <ThemedText style={{ color: "#000000" }}>{edad} anos</ThemedText>}
                 {profile.genero && (
-                  <ThemedText>
+                  <ThemedText style={{ color: "#000000" }}>
                     {generoMap[profile.genero] || profile.genero}
                   </ThemedText>
                 )}
-                <ThemedText>Plan: {profile.plan || "free"}</ThemedText>
+                <ThemedText style={{ color: "#000000" }}>Plan: {profile.plan || "free"}</ThemedText>
               </View>
             </View>
 
@@ -154,14 +154,14 @@ export default function Profile() {
                 borderColor: "#CFE1FA",
               }}
             >
-              <ThemedText type="subtitle">Tu progreso</ThemedText>
+              <ThemedText type="subtitle" style={{ color: "#000000" }}>Tu progreso</ThemedText>
 
               {statsLoading ? (
                 <View style={{ paddingVertical: 24 }}>
                   <ActivityIndicator />
                 </View>
               ) : !stats ? (
-                <ThemedText style={{ marginTop: 12 }}>
+                <ThemedText style={{ marginTop: 12, color: "#000000" }}>
                   Aun no hay estadisticas disponibles.
                 </ThemedText>
               ) : (
@@ -181,10 +181,10 @@ export default function Profile() {
                         borderRadius: 16,
                       }}
                     >
-                      <ThemedText style={{ opacity: 0.7 }}>
+                      <ThemedText style={{ opacity: 0.7, color: "#000000" }}>
                         Cumplimiento semanal
                       </ThemedText>
-                      <ThemedText style={{ fontSize: 30, fontWeight: "700" }}>
+                      <ThemedText style={{ fontSize: 30, fontWeight: "700", color: "#000000" }}>
                         {stats.percentage}%
                       </ThemedText>
                     </View>
@@ -197,17 +197,17 @@ export default function Profile() {
                         borderRadius: 16,
                       }}
                     >
-                      <ThemedText style={{ opacity: 0.7 }}>
+                      <ThemedText style={{ opacity: 0.7, color: "#000000" }}>
                         Racha actual
                       </ThemedText>
-                      <ThemedText style={{ fontSize: 30, fontWeight: "700" }}>
+                      <ThemedText style={{ fontSize: 30, fontWeight: "700", color: "#000000" }}>
                         {stats.streak}
                       </ThemedText>
                     </View>
                   </View>
 
                   <View style={{ marginTop: 20 }}>
-                    <ThemedText type="defaultSemiBold">
+                    <ThemedText type="defaultSemiBold" style={{ color: "#000000" }}>
                       Ultimos 7 dias
                     </ThemedText>
 
@@ -233,7 +233,7 @@ export default function Profile() {
                       }}
                     >
                       {stats.daily.map((day) => (
-                        <ThemedText key={day.day} style={{ fontSize: 10 }}>
+                        <ThemedText key={day.day} style={{ fontSize: 10, color: "#000000" }}>
                           {day.day}
                         </ThemedText>
                       ))}
@@ -268,7 +268,7 @@ export default function Profile() {
                 borderColor: "#E9E0D5",
               }}
             >
-              <ThemedText style={{ textAlign: "center" }}>
+              <ThemedText style={{ textAlign: "center", color: "#000000" }}>
                 Privacidad y datos
               </ThemedText>
             </Pressable>

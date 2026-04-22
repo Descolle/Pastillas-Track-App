@@ -96,9 +96,9 @@ export default function CreateMedication() {
             borderColor: "#CFE1FA",
           }}
         >
-          <ThemedText type="title">Create</ThemedText>
+          <ThemedText type="title" style={{ color: "#000000" }}>Nuevo Medicamento</ThemedText>
 
-          <ThemedText style={{ marginTop: 10, opacity: 0.72 }}>
+          <ThemedText style={{ marginTop: 10, opacity: 0.72, color: "#000000" }}>
             Agrega un medicamento con su dosis y horario para recordarlo cada
             dia.
           </ThemedText>
@@ -111,7 +111,7 @@ export default function CreateMedication() {
               padding: 18,
             }}
           >
-            <ThemedText type="defaultSemiBold">Nombre</ThemedText>
+            <ThemedText type="defaultSemiBold" style={{ color: "#000000" }}>Nombre</ThemedText>
             <TextInput
               value={name}
               onChangeText={setName}
@@ -129,7 +129,7 @@ export default function CreateMedication() {
               padding: 18,
             }}
           >
-            <ThemedText type="defaultSemiBold">Dosis</ThemedText>
+            <ThemedText type="defaultSemiBold" style={{ color: "#000000" }}>Dosis</ThemedText>
             <TextInput
               value={dose}
               onChangeText={setDose}
@@ -148,7 +148,7 @@ export default function CreateMedication() {
               padding: 18,
             }}
           >
-            <ThemedText type="defaultSemiBold">Horario</ThemedText>
+            <ThemedText type="defaultSemiBold" style={{ color: "#000000" }}>Horario</ThemedText>
 
             <Pressable
               onPress={() => setShowPicker(true)}
@@ -160,12 +160,12 @@ export default function CreateMedication() {
                 paddingHorizontal: 16,
               }}
             >
-              <ThemedText style={{ color: "#111111" }}>
+              <ThemedText style={{ color: "#000000" }}>
                 {formatTime(time)}
               </ThemedText>
             </Pressable>
 
-            <ThemedText style={{ marginTop: 8, opacity: 0.65 }}>
+            <ThemedText style={{ marginTop: 8, opacity: 0.65, color: "#000000" }}>
               Se usara para programar el recordatorio diario.
             </ThemedText>
 

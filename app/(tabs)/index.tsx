@@ -1,23 +1,19 @@
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
   FlatList,
   Pressable,
-  Text,
-  View,
+  View
 } from "react-native";
 
-import { generateTodayIntakes } from "@/api/intakes";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { useAuth } from "@/context/AuthContext";
+import { useMedication } from "@/context/MedicationContext";
 import { useHomeScreenStyles } from "@/hooks/use-styles";
 import {
   deleteMedication,
-  loadRemotePastillas,
   markAsTaken,
   updateMedication,
   type Pastilla,
@@ -25,57 +21,13 @@ import {
 
 export default function Home() {
   const { user } = useAuth();
+  const { pastillas, hydrated, refreshRemote } = useMedication();
   const styles = useHomeScreenStyles();
-
-  const [pastillas, setPastillas] = useState<Pastilla[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  const STORAGE_KEY = "pastillas_local";
-
-  useEffect(() => {
-    const load = async () => {
-      if (!user) {
-        setPastillas([]);
-        setLoading(false);
-        return;
-      }
-
-      try {
-        setLoading(true);
-
-        const local = await AsyncStorage.getItem(STORAGE_KEY);
-        if (local) setPastillas(JSON.parse(local));
-
-        await generateTodayIntakes(user.id);
-        const remote = await loadRemotePastillas(user.id);
-
-        console.log("Setting pastillas:", remote);
-        setPastillas(remote);
-        await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(remote));
-      } catch (error) {
-        console.log("Offline mode:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    load();
-  }, [user]);
-
-  const updateLocal = async (data: Pastilla[]) => {
-    setPastillas(data);
-    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-  };
 
   const marcarTomada = async (id: string) => {
     try {
       await markAsTaken(id);
-
-      const updated = pastillas.map((p) =>
-        p.id === id ? { ...p, tomada: true } : p
-      );
-
-      await updateLocal(updated);
+      await refreshRemote();
     } catch {
       Alert.alert("Offline", "Se marcará cuando vuelva internet");
     }
@@ -90,7 +42,7 @@ export default function Home() {
         onPress: async () => {
           try {
             await deleteMedication(id);
-            await updateLocal(pastillas.filter((p) => p.id !== id));
+            await refreshRemote();
           } catch {
             Alert.alert("Offline", "Se eliminará luego");
           }
@@ -102,12 +54,7 @@ export default function Home() {
   const actualizar = async (item: Pastilla, dosis: number) => {
     try {
       await updateMedication(item.id, item.nombre, dosis, item.time);
-
-      const updated = pastillas.map((p) =>
-        p.id === item.id ? { ...p, cantidad: dosis } : p
-      );
-
-      await updateLocal(updated);
+      await refreshRemote();
     } catch {
       Alert.alert("Offline", "Se actualizará luego");
     }
@@ -121,7 +68,7 @@ export default function Home() {
     ]);
   };
 
-  if (loading) {
+  if (!hydrated) {
     return (
       <ThemedView style={styles.flex1}>
         <ActivityIndicator />
@@ -129,28 +76,12 @@ export default function Home() {
     );
   }
 
-  console.log("Rendering with pastillas:", pastillas, "Loading:", loading);
-
   return (
     <ThemedView style={styles.flex1}>
-      {/* Debug info */}
-      <View style={{ padding: 16, backgroundColor: '#f0f0f0' }}>
-        <Text style={{ fontSize: 16, fontWeight: 'bold' }}>
-          Medicamentos: {pastillas.length} | Loading: {loading ? 'Yes' : 'No'}
-        </Text>
-        {pastillas.length > 0 && (
-          <Text style={{ fontSize: 12, marginTop: 4 }}>
-            First item: {JSON.stringify(pastillas[0])}
-          </Text>
-        )}
-      </View>
-      
       <FlatList
         data={pastillas}
         keyExtractor={(item) => item.id}
-        renderItem={({ item }) => {
-          console.log("Rendering item:", item);
-          return (
+        renderItem={({ item }) => (
           <View style={styles.medicationCard}>
             <View style={styles.medicationCardTopRow}>
               <View style={styles.medicationInfoBlock}>
@@ -197,8 +128,7 @@ export default function Home() {
               </View>
             </View>
           </View>
-          );
-        }}
+        )}
       />
     </ThemedView>
   );

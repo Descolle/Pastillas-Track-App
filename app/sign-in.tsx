@@ -1,15 +1,19 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Alert, Pressable, TextInput, View } from "react-native";
 
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { supabase } from "@/lib/supabase";
 
+const REMEMBER_ME_KEY = "remember_me_credentials";
+
 export default function SignIn() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
 
   const inputStyle = {
     marginTop: 18,
@@ -20,6 +24,52 @@ export default function SignIn() {
     color: "#111111",
     fontSize: 16,
   } as const;
+
+  // Load saved credentials on component mount
+  useEffect(() => {
+    const loadSavedCredentials = async () => {
+      try {
+        const saved = await AsyncStorage.getItem(REMEMBER_ME_KEY);
+        if (saved) {
+          const credentials = JSON.parse(saved);
+          setEmail(credentials.email || "");
+          setPassword(credentials.password || "");
+          setRememberMe(true);
+          
+          // Auto-login if credentials are saved
+          await handleAutoLogin(credentials.email, credentials.password);
+        }
+      } catch (error) {
+        console.log("Error loading saved credentials:", error);
+      }
+    };
+
+    loadSavedCredentials();
+  }, []);
+
+  const handleAutoLogin = async (savedEmail: string, savedPassword: string) => {
+    if (!savedEmail || !savedPassword) return;
+
+    try {
+      setLoading(true);
+      const { error, data } = await supabase.auth.signInWithPassword({
+        email: savedEmail.trim(),
+        password: savedPassword,
+      });
+
+      if (error) throw error;
+
+      console.log("Auto-login successful:", data);
+      router.replace("/(tabs)");
+    } catch (err: any) {
+      console.log("Auto-login failed:", err.message);
+      // Clear invalid credentials
+      await AsyncStorage.removeItem(REMEMBER_ME_KEY);
+      setRememberMe(false);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleLogin = async () => {
     if (loading) return;
@@ -35,11 +85,25 @@ export default function SignIn() {
       if (error) throw error;
 
       console.log("Login successful:", data);
-      console.log("Session:", data.session);
-      console.log("User:", data.user);
 
-      // Add a small delay to ensure session is properly set
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Save credentials if remember me is checked
+      if (rememberMe) {
+        try {
+          await AsyncStorage.setItem(REMEMBER_ME_KEY, JSON.stringify({
+            email: email.trim(),
+            password: password,
+          }));
+        } catch (error) {
+          console.log("Error saving credentials:", error);
+        }
+      } else {
+        // Clear credentials if remember me is unchecked
+        try {
+          await AsyncStorage.removeItem(REMEMBER_ME_KEY);
+        } catch (error) {
+          console.log("Error clearing credentials:", error);
+        }
+      }
       
       router.replace("/(tabs)");
     } catch (err: any) {
@@ -90,6 +154,44 @@ export default function SignIn() {
           onChangeText={setPassword}
           style={inputStyle}
         />
+
+        {/* Remember Me Checkbox */}
+        <Pressable
+          onPress={() => setRememberMe(!rememberMe)}
+          style={{
+            marginTop: 16,
+            flexDirection: "row",
+            alignItems: "center",
+          }}
+        >
+          <View
+            style={{
+              width: 20,
+              height: 20,
+              borderWidth: 2,
+              borderColor: rememberMe ? "#FFFFFF" : "rgba(255,255,255,0.5)",
+              borderRadius: 4,
+              justifyContent: "center",
+              alignItems: "center",
+              backgroundColor: rememberMe ? "#FFFFFF" : "transparent",
+            }}
+          >
+            {rememberMe && (
+              <ThemedText style={{ color: "#123B6A", fontSize: 12, fontWeight: "bold" }}>
+                ×
+              </ThemedText>
+            )}
+          </View>
+          <ThemedText
+            style={{
+              marginLeft: 8,
+              color: "rgba(255,255,255,0.9)",
+              fontSize: 14,
+            }}
+          >
+            Recordarme
+          </ThemedText>
+        </Pressable>
 
         <Pressable
           onPress={handleLogin}

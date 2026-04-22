@@ -1,13 +1,14 @@
 import {
-  createContext,
-  ReactNode,
-  useContext,
-  useEffect,
-  useState,
+    createContext,
+    ReactNode,
+    useContext,
+    useEffect,
+    useState,
 } from "react";
 
 import { supabase } from "@/lib/supabase";
 import { deleteCurrentAccount } from "@/services/account";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 type User = {
   id: string;
@@ -137,6 +138,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
+    // Clear cached credentials from AsyncStorage
+    try {
+      await AsyncStorage.removeItem("remember_me_credentials");
+      console.log("Cleared cached credentials on logout");
+    } catch (error) {
+      console.error("Error clearing cached credentials:", error);
+    }
+    
+    // Sign out from Supabase
     await supabase.auth.signOut();
     setUser(null);
     setProfile(null);

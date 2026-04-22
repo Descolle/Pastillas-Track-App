@@ -83,24 +83,7 @@ export default function LegalScreen() {
               </ThemedText>
             </View>
           </View>
-
-          <View style={{ marginTop: 24 }}>
-            <ThemedText style={{ color: "#000000", fontWeight: "600" }}>
-              Publicacion web requerida por Google Play
-            </ThemedText>
-            <View style={{ marginTop: 12 }}>
-              <ThemedText style={{ color: "#000000", lineHeight: 20 }}>
-                • Los documentos listos para publicar quedaron en la carpeta docs/.
-              </ThemedText>
-              <ThemedText style={{ color: "#000000", lineHeight: 20 }}>
-                Activa GitHub Pages o subelos a tu hosting y usa esas URLs en
-              </ThemedText>
-              <ThemedText style={{ color: "#000000", lineHeight: 20 }}>
-                Google Play Console.
-              </ThemedText>
-            </View>
-          </View>
-
+          
           <Pressable
             onPress={() => router.back()}
             style={{

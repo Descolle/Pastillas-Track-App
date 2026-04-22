@@ -2,7 +2,7 @@ import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/lib/supabase";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
-import { Alert, Pressable, TextInput, View } from "react-native";
+import { Alert, Pressable, ScrollView, TextInput, View } from "react-native";
 
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
@@ -58,83 +58,193 @@ export default function EditProfile() {
   };
 
   return (
-    <ThemedView style={{ flex: 1, padding: 20 }}>
-      <ThemedText type="title">✏️ Editar perfil</ThemedText>
+    <ThemedView
+      style={{ flex: 1 }}
+      lightColor="#123B6A"
+      darkColor="#0B2440"
+    >
+      <ScrollView contentContainerStyle={{ padding: 24, paddingBottom: 40 }}>
+        <View
+          style={{
+            backgroundColor: "rgba(255,255,255,0.08)",
+            borderRadius: 24,
+            padding: 24,
+            borderWidth: 1,
+            borderColor: "rgba(255,255,255,0.18)",
+          }}
+        >
+          <ThemedText type="title" style={{ color: "#FFFFFF" }}>
+            ✏️ Editar perfil
+          </ThemedText>
 
-      {/* Nombre */}
-      <TextInput
-        placeholder="Nombre"
-        value={nombre}
-        onChangeText={setNombre}
-        style={{ marginTop: 20, borderBottomWidth: 1, padding: 8 }}
-      />
+          <ThemedText
+            style={{ color: "rgba(255,255,255,0.82)", marginTop: 10 }}
+          >
+            Actualiza tu información personal y preferencias.
+          </ThemedText>
 
-      {/* Apellido */}
-      <TextInput
-        placeholder="Apellido"
-        value={apellido}
-        onChangeText={setApellido}
-        style={{ marginTop: 20, borderBottomWidth: 1, padding: 8 }}
-      />
-
-      {/* Fecha nacimiento */}
-      <TextInput
-        placeholder="Fecha nacimiento (YYYY-MM-DD)"
-        value={fecha}
-        onChangeText={setFecha}
-        style={{ marginTop: 20, borderBottomWidth: 1, padding: 8 }}
-      />
-
-      {/* Género */}
-      <View style={{ marginTop: 20 }}>
-        <ThemedText style={{ marginBottom: 10 }}>Género</ThemedText>
-
-        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}>
-          {[
-            { label: "Hombre", value: "male" },
-            { label: "Mujer", value: "female" },
-            { label: "Hombre trans", value: "male_trans" },
-            { label: "Mujer trans", value: "female_trans" },
-            { label: "Otro", value: "other" },
-          ].map((g) => (
-            <Pressable
-              key={g.value}
-              onPress={() => setGenero(g.value)}
+          {/* Nombre */}
+          <View
+            style={{
+              marginTop: 22,
+              backgroundColor: "#FDF1E3",
+              borderRadius: 20,
+              padding: 18,
+            }}
+          >
+            <ThemedText type="defaultSemiBold" style={{ color: "#000000" }}>
+              Nombre
+            </ThemedText>
+            <TextInput
+              value={nombre}
+              onChangeText={setNombre}
+              placeholder="Ej: Juan"
               style={{
-                paddingVertical: 8,
-                paddingHorizontal: 14,
-                borderRadius: 20,
-                borderWidth: 1,
-                borderColor: genero === g.value ? "#007AFF" : "#ccc",
-                backgroundColor: genero === g.value ? "#007AFF" : "transparent",
+                marginTop: 10,
+                backgroundColor: "#FFFFFF",
+                borderRadius: 14,
+                paddingVertical: 14,
+                paddingHorizontal: 16,
+                color: "#111111",
+                fontSize: 16,
+              }}
+            />
+          </View>
+
+          {/* Apellido */}
+          <View
+            style={{
+              marginTop: 14,
+              backgroundColor: "#FDF1E3",
+              borderRadius: 20,
+              padding: 18,
+            }}
+          >
+            <ThemedText type="defaultSemiBold" style={{ color: "#000000" }}>
+              Apellido
+            </ThemedText>
+            <TextInput
+              value={apellido}
+              onChangeText={setApellido}
+              placeholder="Ej: Pérez"
+              style={{
+                marginTop: 10,
+                backgroundColor: "#FFFFFF",
+                borderRadius: 14,
+                paddingVertical: 14,
+                paddingHorizontal: 16,
+                color: "#111111",
+                fontSize: 16,
+              }}
+            />
+          </View>
+
+          {/* Fecha nacimiento */}
+          <View
+            style={{
+              marginTop: 14,
+              backgroundColor: "#FDF1E3",
+              borderRadius: 20,
+              padding: 18,
+            }}
+          >
+            <ThemedText type="defaultSemiBold" style={{ color: "#000000" }}>
+              Fecha nacimiento
+            </ThemedText>
+            <TextInput
+              value={fecha}
+              onChangeText={setFecha}
+              placeholder="YYYY-MM-DD"
+              style={{
+                marginTop: 10,
+                backgroundColor: "#FFFFFF",
+                borderRadius: 14,
+                paddingVertical: 14,
+                paddingHorizontal: 16,
+                color: "#111111",
+                fontSize: 16,
+              }}
+            />
+          </View>
+
+          {/* Género */}
+          <View
+            style={{
+              marginTop: 14,
+              backgroundColor: "#FDF1E3",
+              borderRadius: 20,
+              padding: 18,
+            }}
+          >
+            <ThemedText type="defaultSemiBold" style={{ color: "#000000" }}>
+              Género
+            </ThemedText>
+            <View style={{ marginTop: 10 }}>
+              {[
+                { label: "Hombre", value: "male" },
+                { label: "Mujer", value: "female" },
+                { label: "Hombre trans", value: "male_trans" },
+                { label: "Mujer trans", value: "female_trans" },
+                { label: "Otro", value: "other" },
+              ].map((g) => (
+                <Pressable
+                  key={g.value}
+                  onPress={() => setGenero(g.value)}
+                  style={{
+                    paddingVertical: 8,
+                    paddingHorizontal: 14,
+                    borderRadius: 20,
+                    borderWidth: 1,
+                    borderColor: genero === g.value ? "#007AFF" : "#ccc",
+                    backgroundColor: genero === g.value ? "#007AFF" : "transparent",
+                  }}
+                >
+                  <ThemedText style={{ color: "#000000" }}>
+                    {g.label}
+                  </ThemedText>
+                </Pressable>
+              ))}
+            </View>
+          </View>
+
+          <Pressable
+            onPress={handleSave}
+            disabled={loading}
+            style={{
+              marginTop: 28,
+              backgroundColor: loading ? "#ccc" : "#FFFFFF",
+              paddingVertical: 15,
+              borderRadius: 14,
+            }}
+          >
+            <ThemedText
+              style={{
+                color: "#123B6A",
+                textAlign: "center",
+                fontWeight: "700",
               }}
             >
-              <ThemedText
-                style={{
-                  color: genero === g.value ? "#fff" : "#000",
-                }}
-              >
-                {g.label}
-              </ThemedText>
-            </Pressable>
-          ))}
+              {loading ? "Guardando..." : "Guardar cambios"}
+            </ThemedText>
+          </Pressable>
         </View>
-      </View>
 
-      {/* Guardar */}
-      <Pressable
-        onPress={handleSave}
-        style={{
-          marginTop: 30,
-          backgroundColor: "#007AFF",
-          padding: 14,
-          borderRadius: 12,
-        }}
-      >
-        <ThemedText style={{ color: "#fff", textAlign: "center" }}>
-          {loading ? "Guardando..." : "Guardar cambios"}
-        </ThemedText>
-      </Pressable>
+        <View style={{ marginTop: 20 }}>
+          <Pressable
+            onPress={() => router.push("/delete-account")}
+            style={{
+              marginTop: 12,
+              backgroundColor: "#FCE8E6",
+              padding: 14,
+              borderRadius: 16,
+            }}
+          >
+            <ThemedText style={{ color: "#FFFFFF", textAlign: "center", fontWeight: "600" }}>
+              Eliminar cuenta
+            </ThemedText>
+          </Pressable>
+        </View>
+      </ScrollView>
     </ThemedView>
   );
 }

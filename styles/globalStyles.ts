@@ -198,6 +198,30 @@ export const useGlobalStyles = () => {
         textDecorationLine: "line-through",
         opacity: 0.6,
       },
+      medicationNameTaken: {
+        fontSize: 16,
+        fontWeight: "600",
+        color: textColor,
+        flex: 1,
+      },
+      buttonTaken: {
+        backgroundColor: "#4CAF50",
+        paddingVertical: 8,
+        paddingHorizontal: 16,
+        borderRadius: 8,
+      },
+      buttonEdit: {
+        backgroundColor: "#FF9800",
+        paddingVertical: 8,
+        paddingHorizontal: 16,
+        borderRadius: 8,
+      },
+      buttonDelete: {
+        backgroundColor: "#F44336",
+        paddingVertical: 8,
+        paddingHorizontal: 16,
+        borderRadius: 8,
+      },
 
       medicationInfoBlock: {
         flex: 1,

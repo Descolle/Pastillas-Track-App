@@ -2,10 +2,10 @@ import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
-    ActivityIndicator,
-    Pressable,
-    ScrollView,
-    View,
+  ActivityIndicator,
+  Pressable,
+  ScrollView,
+  View,
 } from "react-native";
 
 import { ThemedText } from "@/components/themed-text";
@@ -134,7 +134,7 @@ export default function Profile() {
               <ThemedText style={{ opacity: 0.65, color: "#000000" }}>{user?.email}</ThemedText>
 
               <View style={{ marginTop: 16, gap: 6 }}>
-                {edad !== null && <ThemedText style={{ color: "#000000" }}>{edad} anos</ThemedText>}
+                {edad !== null && <ThemedText style={{ color: "#000000" }}>{edad} años</ThemedText>}
                 {profile.genero && (
                   <ThemedText style={{ color: "#000000" }}>
                     {generoMap[profile.genero] || profile.genero}
@@ -274,34 +274,20 @@ export default function Profile() {
             </Pressable>
 
             <Pressable
-              onPress={() => router.push("/delete-account")}
+              onPress={signOut}
               style={{
-                marginTop: 12,
-                backgroundColor: "#FCE8E6",
+                marginTop: 20,
+                backgroundColor: "#E7EEF7",
                 padding: 14,
                 borderRadius: 16,
               }}
             >
-              <ThemedText style={{ textAlign: "center", color: "#B42318" }}>
-                Eliminar cuenta
+              <ThemedText style={{ textAlign: "center", color: "#000000" }}>
+                Cerrar sesión
               </ThemedText>
             </Pressable>
           </>
         )}
-
-        <Pressable
-          onPress={signOut}
-          style={{
-            marginTop: 20,
-            backgroundColor: "#E7EEF7",
-            padding: 14,
-            borderRadius: 16,
-          }}
-        >
-          <ThemedText style={{ color: "#173B67", textAlign: "center" }}>
-            Cerrar sesion
-          </ThemedText>
-        </Pressable>
       </ScrollView>
     </ThemedView>
   );

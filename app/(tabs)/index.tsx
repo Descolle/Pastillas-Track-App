@@ -61,11 +61,90 @@ export default function Home() {
   };
 
   const editar = (item: Pastilla) => {
-    Alert.alert("Editar", "Dosis", [
-      { text: "1", onPress: () => actualizar(item, 1) },
-      { text: "2", onPress: () => actualizar(item, 2) },
-      { text: "Cancelar", style: "cancel" },
-    ]);
+    Alert.alert(
+      "Editar medicamento",
+      "¿Qué quieres editar?",
+      [
+        { text: "Dosis", onPress: () => editarDosis(item) },
+        { text: "Hora", onPress: () => editarHora(item) },
+        { text: "Eliminar", onPress: () => eliminar(item.id), style: "destructive" },
+        { text: "Cancelar", style: "cancel" },
+      ]
+    );
+  };
+
+  const editarDosis = (item: Pastilla) => {
+    Alert.alert(
+      "Editar dosis",
+      "Selecciona la nueva dosis:",
+      [
+        { text: "1", onPress: () => actualizar(item, 1) },
+        { text: "2", onPress: () => actualizar(item, 2) },
+        { text: "3", onPress: () => actualizar(item, 3) },
+        { text: "4", onPress: () => actualizar(item, 4) },
+        { text: "5", onPress: () => actualizar(item, 5) },
+        { text: "Otro", onPress: () => editarDosisCustom(item) },
+        { text: "0 (Eliminar)", onPress: () => eliminar(item.id), style: "destructive" },
+        { text: "Cancelar", style: "cancel" },
+      ]
+    );
+  };
+
+  const editarDosisCustom = (item: Pastilla) => {
+    Alert.alert(
+      "Dosis personalizada",
+      "Ingresa un número mayor a 0:",
+      [
+        { text: "1", onPress: () => actualizar(item, 1) },
+        { text: "2", onPress: () => actualizar(item, 2) },
+        { text: "3", onPress: () => actualizar(item, 3) },
+        { text: "4", onPress: () => actualizar(item, 4) },
+        { text: "5", onPress: () => actualizar(item, 5) },
+        { text: "6", onPress: () => actualizar(item, 6) },
+        { text: "7", onPress: () => actualizar(item, 7) },
+        { text: "8", onPress: () => actualizar(item, 8) },
+        { text: "9", onPress: () => actualizar(item, 9) },
+        { text: "10", onPress: () => actualizar(item, 10) },
+        { text: "Cancelar", style: "cancel" },
+      ]
+    );
+  };
+
+  const editarHora = (item: Pastilla) => {
+    Alert.alert(
+      "Editar hora",
+      "Selecciona la nueva hora:",
+      [
+        { text: "06:00", onPress: () => actualizarHora(item, "06:00") },
+        { text: "07:00", onPress: () => actualizarHora(item, "07:00") },
+        { text: "08:00", onPress: () => actualizarHora(item, "08:00") },
+        { text: "09:00", onPress: () => actualizarHora(item, "09:00") },
+        { text: "10:00", onPress: () => actualizarHora(item, "10:00") },
+        { text: "11:00", onPress: () => actualizarHora(item, "11:00") },
+        { text: "12:00", onPress: () => actualizarHora(item, "12:00") },
+        { text: "13:00", onPress: () => actualizarHora(item, "13:00") },
+        { text: "14:00", onPress: () => actualizarHora(item, "14:00") },
+        { text: "15:00", onPress: () => actualizarHora(item, "15:00") },
+        { text: "16:00", onPress: () => actualizarHora(item, "16:00") },
+        { text: "17:00", onPress: () => actualizarHora(item, "17:00") },
+        { text: "18:00", onPress: () => actualizarHora(item, "18:00") },
+        { text: "19:00", onPress: () => actualizarHora(item, "19:00") },
+        { text: "20:00", onPress: () => actualizarHora(item, "20:00") },
+        { text: "21:00", onPress: () => actualizarHora(item, "21:00") },
+        { text: "22:00", onPress: () => actualizarHora(item, "22:00") },
+        { text: "Cancelar", style: "cancel" },
+      ]
+    );
+  };
+
+  const actualizarHora = async (item: Pastilla, newTime: string) => {
+    try {
+      await updateMedication(item.id, item.nombre, item.cantidad, newTime);
+      await refreshRemote();
+      Alert.alert("Éxito", "Hora actualizada");
+    } catch {
+      Alert.alert("Offline", "Se actualizará luego");
+    }
   };
 
   if (!hydrated) {
@@ -115,15 +194,15 @@ export default function Home() {
 
               <View style={styles.medicationActions}>
                 <Pressable onPress={() => marcarTomada(item.id)}>
-                  <MaterialIcons name="check" size={22} />
+                  <MaterialIcons name="check" size={22} color={item.tomada ? "#4CAF50" : "#000000"} />
                 </Pressable>
 
                 <Pressable onPress={() => editar(item)}>
-                  <MaterialIcons name="edit" size={20} />
+                  <MaterialIcons name="edit" size={20} color={item.tomada ? "#8B451" : "#000000"} />
                 </Pressable>
 
                 <Pressable onPress={() => eliminar(item.id)}>
-                  <MaterialIcons name="delete" size={20} />
+                  <MaterialIcons name="delete" size={20} color={item.tomada ? "#8B451" : "#000000"} />
                 </Pressable>
               </View>
             </View>

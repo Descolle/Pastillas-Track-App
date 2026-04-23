@@ -1,7 +1,9 @@
+import { ThemedText } from "@/components/themed-text";
 import { useAuth } from "@/context/AuthContext";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { Tabs, useRouter } from "expo-router";
 import React, { useEffect } from "react";
+import { Alert, Pressable, View } from "react-native";
 
 export default function TabLayout() {
   const { user, loading } = useAuth();
@@ -13,16 +15,41 @@ export default function TabLayout() {
     }
   }, [user, loading]);
 
+  const handleSettingsPress = () => {
+    Alert.alert("Configuración", "Próximamente podrás personalizar el sonido de notificaciones y el idioma aquí.");
+  };
+
   return (
     <Tabs
       screenOptions={{
         headerShown: true,
-        headerTitle: "RecuerdaMed",
+        headerTitle: () => (
+          <View style={{ flexDirection: "row", alignItems: "center", flex: 1 }}>
+            <MaterialIcons name="medication" size={24} color="#FFFFFF" style={{ marginRight: 8 }} />
+            <ThemedText style={{ color: "#FFFFFF", fontWeight: "bold", fontSize: 20 }}>
+              RecuerdaMed
+            </ThemedText>
+          </View>
+        ),
         headerTitleAlign: "center",
         headerStyle: {
-          backgroundColor: "#fff",
+          backgroundColor: "#123B6A",
+        },
+        headerTintColor: "#FFFFFF",
+        headerTitleStyle: {
+          color: "#FFFFFF",
+          fontWeight: "bold",
+          fontSize: 20,
         },
         headerShadowVisible: false,
+        headerRight: () => (
+          <Pressable
+            onPress={handleSettingsPress}
+            style={{ marginRight: 16, padding: 4 }}
+          >
+            <MaterialIcons name="settings" size={24} color="#FFFFFF" />
+          </Pressable>
+        ),
         tabBarActiveTintColor: "#007AFF",
         tabBarInactiveTintColor: "#8E8E93",
         tabBarStyle: {

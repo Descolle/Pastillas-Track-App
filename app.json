@@ -27,7 +27,8 @@
         "foregroundImage": "./assets/images/icon.png"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "versionCode": 2
     },
     "web": {
       "output": "static",
@@ -47,7 +48,19 @@
           }
         }
       ],
-      "@react-native-community/datetimepicker"
+      "@react-native-community/datetimepicker",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/icon.png",
+          "color": "#E6F4FE",
+          "sounds": [
+            "./assets/sounds/pill_reminder_1.wav",
+            "./assets/sounds/pill_reminder_2.wav",
+            "./assets/sounds/pill_reminder_3.wav"
+          ]
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

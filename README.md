@@ -37,29 +37,71 @@ Pastillas Track App permite a los usuarios:
 ```
 app/
   (tabs)/
-    index.tsx        → Pantalla principal (CRUD)
-    explore.tsx      → Dashboard / resumen
-    layout.tsx       → Navegación Tabs
+    index.tsx        → Pantalla principal (CRUD medicamentos)
+    create.tsx        → Crear nuevo medicamento
+    profile.tsx       → Perfil de usuario
+    account.tsx       → Cuenta y configuración
+    stats.tsx         → Estadísticas (placeholder)
+    _layout.tsx       → Navegación Tabs
 
-  layout.tsx         → Provider global + configuración
+  _layout.tsx         → Provider global + configuración
+  sign-in.tsx         → Inicio de sesión
+  sign-up.tsx         → Registro
+  edit-profile.tsx    → Editar perfil
+  delete-account.tsx  → Eliminar cuenta
+  legal.tsx           → Información legal
+  terms.tsx           → Términos y condiciones
+  modal.tsx           → Componente modal
+  paywall.tsx         → Muro de pago
 
 components/
-  ui/                → Componentes reutilizables (Button, Card, Input)
+  ui/                 → Componentes reutilizables
+    collapsible.tsx   → Componente plegable
+    icon-symbol.tsx   → Iconos simbólicos
+  themed-text.tsx     → Texto con tema
+  themed-view.tsx     → Vista con tema
+  MedicationEditModal.tsx → Modal edición medicamentos
+  external-link.tsx   → Enlaces externos
+  haptic-tab.tsx      → Tabs hápticos
+  hello-wave.tsx      → Componente ejemplo
+  parallax-scroll-view.tsx → Scroll con paralaje
 
 context/
-  MedicationContext.tsx → Estado global de pastillas
+  AuthContext.tsx     → Estado global de autenticación
+  MedicationContext.tsx → Estado global de medicamentos
 
 hooks/
-  useNotifications.ts → Configuración global de notificaciones
+  use-styles.ts       → Gestión de estilos
+  use-color-scheme.ts → Esquema de colores
+  use-theme-color.ts  → Color del tema
+  use-terms-agreement.ts → Acuerdo de términos
 
 utils/
-  notifications.ts   → Funciones de notificación
+  notification.ts     → Funciones de notificación
+  notification.js     → Versión JS de notificaciones
+  medication-form.ts  → Formulario medicamentos
+
+services/
+  medicationService.ts → Lógica de medicamentos
+  account.ts          → Servicios de cuenta
+  payments.ts         → Servicios de pagos
+  loadRemotePastillas.js → Carga remota
+  observability.ts    → Observabilidad
 
 styles/
-  homeStyles.ts      → Estilos de la pantalla principal
+  homeStyles.ts       → Estilos pantalla principal
+  globalStyles.ts     → Estilos globales
 
-theme/
-  colors.ts          → Colores globales
+constants/
+  theme.ts            → Constantes de tema
+
+lib/
+  supabase.ts         → Configuración Supabase
+  env.ts              → Variables de entorno
+
+assets/
+  sounds/             → Sonidos de notificación
+  images/             → Imágenes de la app
 ```
 
 ---
@@ -231,13 +273,46 @@ Configurar en backend `billing-api`:
 
 ---
 
-## 🚧 Mejoras futuras
+## � Sonidos de Notificación
+
+La app utiliza sonidos personalizados para recordatorios de medicamentos:
+
+### Archivos Requeridos:
+```
+assets/sounds/
+├── pill_reminder_1.wav  - Recordatorio fuerte
+├── pill_reminder_2.wav  - Alternativa fuerte  
+└── pill_reminder_3.wav  - Otra opción fuerte
+```
+
+### Requisitos de Audio:
+* **Formato**: WAV o MP3
+* **Duración**: 1-3 segundos
+* **Volumen**: Alta calidad, salida fuerte
+* **Tamaño**: Menos de 100KB cada uno
+
+### Fuentes de Sonidos Gratuitos:
+* [Zapsplat](https://www.zapsplat.com/)
+* [Freesound](https://freesound.org/)
+* [Mixkit](https://mixkit.co/)
+
+### Implementación:
+* Selección aleatoria entre los 3 sonidos
+* Configuración de canal Android con máxima importancia
+* Vibración y LED incluidos para mayor atención
+
+---
+
+## �� Mejoras futuras
 
 * 🔔 Notificaciones interactivas (botón "Tomar")
 * 🌙 Dark mode automático
 * 📆 Historial de consumo
 * ☁️ Backend con usuarios
 * 📱 Publicación en Play Store
+* 🔐 Protección con PIN para configuración
+* 🌍 Selección de idioma (Español/Inglés)
+* 🎛️ Selector personalizado de sonidos de notificación
 
 ---
 
@@ -247,16 +322,3 @@ Desarrollado por:
 **Tomás Corvalán**
 
 ---
-
-## 📌 Notas finales
-
-Este proyecto fue desarrollado como práctica para:
-
-* Manejo de estado global
-* Persistencia de datos
-* Integración de notificaciones
-* Arquitectura escalable en React Native
-
----
-
-🔥 Proyecto ideal para portafolio junior / semi senior.

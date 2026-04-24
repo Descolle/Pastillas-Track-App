@@ -15,6 +15,8 @@ export type Pastilla = {
 export async function loadRemotePastillas(userId: string): Promise<Pastilla[]> {
   try {
     const today = new Date().toISOString().split("T")[0];
+    console.log("🔍 loadRemotePastillas - userId:", userId);
+    console.log("🔍 loadRemotePastillas - today:", today);
 
     const { data, error } = await supabase
       .from("intakes")
@@ -43,6 +45,7 @@ export async function loadRemotePastillas(userId: string): Promise<Pastilla[]> {
     }
 
     console.log("📦 RAW DATA:", data);
+    console.log("📦 DATA LENGTH:", data?.length);
 
     return (data ?? []).map((i: any) => ({
       id: i.schedule_id, // 🔥 IMPORTANTE

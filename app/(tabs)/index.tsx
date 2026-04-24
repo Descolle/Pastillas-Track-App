@@ -26,6 +26,12 @@ export default function Home() {
   const { pastillas, hydrated, refreshRemote } = useMedication();
   const styles = useHomeScreenStyles();
   
+  // Debug logging
+  console.log("🏠 Home - User:", user?.id);
+  console.log("🏠 Home - Hydrated:", hydrated);
+  console.log("🏠 Home - Pastillas count:", pastillas.length);
+  console.log("🏠 Home - Pastillas data:", pastillas);
+  
   // Modal state
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [editingItem, setEditingItem] = useState<Pastilla | null>(null);

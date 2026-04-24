@@ -45,18 +45,22 @@ export const MedicationProvider = ({ children }: { children: ReactNode }) => {
   const [hydrated, setHydrated] = useState(false);
 
   //
-  // 🔥 SOLO REMOTE (SaaS)
+  // SOLO REMOTE (SaaS)
   //
   useEffect(() => {
     const hydrate = async () => {
       try {
+        console.log(" MedicationContext - Hydrating for user:", user?.id);
         if (user?.id) {
           const remote = await loadRemotePastillas(user.id);
+          console.log(" MedicationContext - Loaded remote data:", remote);
           setPastillas(remote);
         } else {
+          console.log(" MedicationContext - No user, setting empty array");
           setPastillas([]);
         }
       } catch (error) {
+        console.log(" MedicationContext - Hydrate error:", error);
         logError("MedicationProvider hydrate error", { error });
       } finally {
         setHydrated(true);
@@ -67,6 +71,7 @@ export const MedicationProvider = ({ children }: { children: ReactNode }) => {
   }, [user?.id]);
 
   //
+  // PLAN SAAS
   // 💰 PLAN SAAS
   //
   const { profile } = useAuth();

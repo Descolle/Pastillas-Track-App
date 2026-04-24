@@ -29,7 +29,8 @@ export default function Dashboard() {
       if (!user) return;
 
       try {
-        const today = new Date().toISOString().split("T")[0];
+        // Fix timezone issue: use local date instead of UTC
+        const today = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD format in local timezone
 
         // 🔥 traer intakes + relaciones
         const { data, error } = await supabase

@@ -14,9 +14,10 @@ export type Pastilla = {
 //
 export async function loadRemotePastillas(userId: string): Promise<Pastilla[]> {
   try {
-    const today = new Date().toISOString().split("T")[0];
+    // Fix timezone issue: use local date instead of UTC
+    const today = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD format in local timezone
     console.log("🔍 loadRemotePastillas - userId:", userId);
-    console.log("🔍 loadRemotePastillas - today:", today);
+    console.log("🔍 loadRemotePastillas - today (local):", today);
 
     const { data, error } = await supabase
       .from("intakes")
@@ -96,7 +97,7 @@ export async function createMedicationWithSchedule(
     if (schedError) throw schedError;
 
     // 3. Create intake for today
-    const today = new Date().toISOString().split("T")[0];
+    const today = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD format in local timezone
     const { error: intakeError } = await supabase
       .from("intakes")
       .insert({
@@ -118,7 +119,8 @@ export async function createMedicationWithSchedule(
 // 🔥 MARCAR COMO TOMADA
 //
 export async function markAsTaken(scheduleId: string) {
-  const today = new Date().toISOString().split("T")[0];
+  // Fix timezone issue: use local date instead of UTC
+  const today = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD format in local timezone
 
   const { error } = await supabase
     .from("intakes")

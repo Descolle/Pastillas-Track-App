@@ -2,7 +2,8 @@ import { supabase } from "./supabase";
 
 // Generar intakes del día
 export const generateTodayIntakes = async (userId: string) => {
-  const today = new Date().toISOString().split("T")[0];
+  // Fix timezone issue: use local date instead of UTC
+  const today = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD format in local timezone
 
   const { data: schedules, error: schedulesError } = await supabase
     .from("schedules")
@@ -44,7 +45,8 @@ export const generateTodayIntakes = async (userId: string) => {
 
 // Marcar como tomado
 export const markIntakeAsTaken = async (scheduleId: string) => {
-  const today = new Date().toISOString().split("T")[0];
+  // Fix timezone issue: use local date instead of UTC
+  const today = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD format in local timezone
 
   const { error } = await supabase
     .from("intakes")

@@ -2,7 +2,8 @@ import { supabase } from "./supabase";
 
 // Obtener estadísticas del día
 export const getTodayStats = async (userId: string) => {
-  const today = new Date().toISOString().split("T")[0];
+  // Fix timezone issue: use local date instead of UTC
+  const today = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD format in local timezone
 
   const { data, error } = await supabase
     .from("intakes")

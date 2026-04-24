@@ -14,12 +14,10 @@ export type Pastilla = {
 //
 export async function loadRemotePastillas(userId: string): Promise<Pastilla[]> {
   try {
-    // Fix timezone issue: use local date and also check UTC dates for backward compatibility
-    const todayLocal = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD format in local timezone
-    const todayUTC = new Date().toISOString().split("T")[0]; // Old UTC format
+    // Use consistent local date format to prevent duplicates
+    const today = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD format in local timezone
     console.log("🔍 loadRemotePastillas - userId:", userId);
-    console.log("🔍 loadRemotePastillas - today (local):", todayLocal);
-    console.log("🔍 loadRemotePastillas - today (UTC):", todayUTC);
+    console.log("🔍 loadRemotePastillas - today:", today);
 
     const { data, error } = await supabase
       .from("intakes")
@@ -40,7 +38,7 @@ export async function loadRemotePastillas(userId: string): Promise<Pastilla[]> {
         )
       `,
       )
-      .or(`date.eq.${todayLocal},date.eq.${todayUTC}`) // Check both formats
+      .eq("date", today) // Single consistent date
       .eq("schedules.medications.user_id", userId);
 
     if (error) {
@@ -122,7 +120,7 @@ export async function createMedicationWithSchedule(
 // 🔥 MARCAR COMO TOMADA
 //
 export async function markAsTaken(scheduleId: string) {
-  // Fix timezone issue: use local date instead of UTC
+  // Use consistent local date format
   const today = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD format in local timezone
 
   const { error } = await supabase

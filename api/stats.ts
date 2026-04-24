@@ -2,7 +2,7 @@ import { supabase } from "./supabase";
 
 // Obtener estadísticas del día
 export const getTodayStats = async (userId: string) => {
-  // Fix timezone issue: use local date instead of UTC
+  // Use consistent local date format to prevent duplicates
   const today = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD format in local timezone
 
   const { data, error } = await supabase
@@ -17,7 +17,7 @@ export const getTodayStats = async (userId: string) => {
         )
       )
     `)
-    .eq("date", today)
+    .eq("date", today) // Single consistent date
     .eq("schedules.medications.user_id", userId);
 
   if (error) throw error;

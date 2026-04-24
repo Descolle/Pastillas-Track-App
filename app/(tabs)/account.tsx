@@ -29,7 +29,7 @@ export default function Dashboard() {
       if (!user) return;
 
       try {
-        // Fix timezone issue: use local date instead of UTC
+        // Use consistent local date format to prevent duplicates
         const today = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD format in local timezone
 
         // 🔥 traer intakes + relaciones
@@ -48,7 +48,7 @@ export default function Dashboard() {
             )
           `,
           )
-          .eq("date", today)
+          .eq("date", today) // Single consistent date
           .eq("schedules.medications.user_id", user.id);
 
         if (error) throw error;

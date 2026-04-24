@@ -14,10 +14,12 @@ export type Pastilla = {
 //
 export async function loadRemotePastillas(userId: string): Promise<Pastilla[]> {
   try {
-    // Fix timezone issue: use local date instead of UTC
-    const today = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD format in local timezone
+    // Fix timezone issue: use local date and also check UTC dates for backward compatibility
+    const todayLocal = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD format in local timezone
+    const todayUTC = new Date().toISOString().split("T")[0]; // Old UTC format
     console.log("🔍 loadRemotePastillas - userId:", userId);
-    console.log("🔍 loadRemotePastillas - today (local):", today);
+    console.log("🔍 loadRemotePastillas - today (local):", todayLocal);
+    console.log("🔍 loadRemotePastillas - today (UTC):", todayUTC);
 
     const { data, error } = await supabase
       .from("intakes")
@@ -25,6 +27,7 @@ export async function loadRemotePastillas(userId: string): Promise<Pastilla[]> {
         `
         schedule_id,
         taken,
+        date,
         schedules (
           id,
           time,
@@ -37,7 +40,7 @@ export async function loadRemotePastillas(userId: string): Promise<Pastilla[]> {
         )
       `,
       )
-      .eq("date", today)
+      .or(`date.eq.${todayLocal},date.eq.${todayUTC}`) // Check both formats
       .eq("schedules.medications.user_id", userId);
 
     if (error) {

@@ -26,18 +26,25 @@ export interface WeeklyAdherenceSummary {
 export async function trackDailyAdherence(
   userId: string,
   date: string,
-  totalMedications: number,
-  takenMedications: number
+  total: number,
+  taken: number
 ) {
   try {
+    // 🔥 DEBUG AQUÍ
+    const { data: session } = await supabase.auth.getSession();
+console.log("AUTH UID:", session?.session?.user?.id);
+console.log("SENDING USER:", userId);
+
+
+    // 👇 tu insert/upsert
     const { error } = await supabase
       .from("adherence_history")
       .upsert(
         {
           user_id: userId,
           date,
-          total: totalMedications,   // ✅ FIX
-          taken: takenMedications,   // ✅ FIX
+          total,
+          taken,
         },
         {
           onConflict: "user_id,date",
@@ -50,6 +57,7 @@ export async function trackDailyAdherence(
     logError("trackDailyAdherence error", { error });
   }
 }
+
 //
 // 🔥 GET HISTORY
 //

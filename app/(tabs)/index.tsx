@@ -1,11 +1,11 @@
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { useState } from "react";
 import {
-  ActivityIndicator,
-  Alert,
-  FlatList,
-  Pressable,
-  View
+    ActivityIndicator,
+    Alert,
+    FlatList,
+    Pressable,
+    View
 } from "react-native";
 
 import { ThemedText } from "@/components/themed-text";
@@ -13,17 +13,12 @@ import { ThemedView } from "@/components/themed-view";
 import { useAuth } from "@/context/AuthContext";
 import { useMedication } from "@/context/MedicationContext";
 import { useHomeScreenStyles } from "@/hooks/use-styles";
-import {
-  deleteMedication,
-  markAsTaken,
-  updateMedication,
-  type Pastilla,
-} from "@/services/medicationService";
+import { type Pastilla } from "@/services/medicationService";
 import MedicationEditModal from "../../components/MedicationEditModal";
 
 export default function Home() {
   const { user } = useAuth();
-  const { pastillas, hydrated, refreshRemote } = useMedication();
+  const { pastillas, hydrated, refreshRemote, trackMedicationToggle, removePastillaById, updatePastillaById } = useMedication();
   const styles = useHomeScreenStyles();
   
   // Debug logging
@@ -39,8 +34,10 @@ export default function Home() {
 
   const marcarTomada = async (id: string) => {
     try {
-      await markAsTaken(id);
-      await refreshRemote();
+      const item = pastillas.find(p => p.id === id);
+      if (item) {
+        await trackMedicationToggle(id, !item.tomada);
+      }
     } catch {
       Alert.alert("Offline", "Se marcará cuando vuelva internet");
     }
@@ -54,7 +51,7 @@ export default function Home() {
         style: "destructive",
         onPress: async () => {
           try {
-            await deleteMedication(id);
+            await removePastillaById(id);
             await refreshRemote();
           } catch {
             Alert.alert("Offline", "Se eliminará luego");
@@ -94,13 +91,13 @@ export default function Home() {
           await eliminar(editingItem.id);
         } else {
           // Update dosis
-          await updateMedication(editingItem.id, editingItem.nombre, dosis, editingItem.time);
+          await updatePastillaById(editingItem.id, { ...editingItem, cantidad: dosis });
           await refreshRemote();
           Alert.alert("Éxito", "Dosis actualizada");
         }
       } else if (time !== undefined) {
         // Time editing
-        await updateMedication(editingItem.id, editingItem.nombre, editingItem.cantidad, time);
+        await updatePastillaById(editingItem.id, { ...editingItem, time });
         await refreshRemote();
         Alert.alert("Éxito", "Hora actualizada");
       }

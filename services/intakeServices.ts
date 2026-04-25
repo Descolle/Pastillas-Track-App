@@ -1,53 +1,28 @@
 import { supabase } from "@/lib/supabase";
 
 function getToday() {
-  return new Date().toISOString().split("T")[0]; // YYYY-MM-DD
+  return new Date().toISOString().split("T")[0];
 }
 
-/**
- * ✅ Marcar una dosis como tomada (UPSERT seguro)
- */
-export async function markAsTaken(scheduleId: string) {
-  try {
-    const now = new Date().toISOString();
-    const today = now.split("T")[0];
-
-    const { error } = await supabase
-      .from("intakes")
-      .upsert(
-        {
-          schedule_id: scheduleId,
-          taken_at: now,
-          taken_date: today,
-          status: "taken",
-        },
-        {
-          onConflict: "schedule_id,taken_date",
-        },
-      );
-
-    if (error) throw error;
-  } catch (error) {
-    console.log("markAsTaken error:", error);
-    throw error;
-  }
-}
-
-
-/**
- * 🔄 (opcional) Desmarcar como tomada
- */
-export async function unmarkAsTaken(scheduleId: string) {
+export async function markAsTaken(scheduleId: string, userId: string) {
+  const now = new Date().toISOString();
   const today = getToday();
+
+  console.log("🔥 markAsTaken START:", { scheduleId, userId, now, today });
 
   const { error } = await supabase
     .from("intakes")
-    .delete()
-    .eq("schedule_id", scheduleId)
-    .eq("taken_date", today);
+    .insert({
+      schedule_id: scheduleId,
+      user_id: userId,
+      taken_at: now,
+      status: "taken"
+    });
 
   if (error) {
-    console.log("❌ unmarkAsTaken error:", error);
+    console.log("🔥 markAsTaken ERROR:", error);
     throw error;
   }
+
+  console.log("🔥 markAsTaken SUCCESS");
 }

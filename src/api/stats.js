@@ -21,7 +21,7 @@ export const getWeeklyStats = async (userId) => {
   const { data, error } = await supabase
     .from("intakes")
     .select(`
-      taken_date,
+      taken_at,
       status,
       schedules!inner (
         user_id,
@@ -29,13 +29,16 @@ export const getWeeklyStats = async (userId) => {
       )
     `)
     .eq("schedules.user_id", userId)
-    .in("taken_date", last7Days);
+    .in("date(taken_at)", last7Days);
 
   if (error) throw error;
 
   const daily = last7Days.map((date) => {
     const dayData = (data ?? []).filter(
-      (d) => d.taken_date === date
+      (d) => {
+        const intakeDate = d.taken_at ? new Date(d.taken_at).toISOString().split("T")[0] : null;
+        return intakeDate === date;
+      }
     );
 
     const total = dayData.reduce(

@@ -1,83 +1,63 @@
-import { supabase } from "../api/supabase";
+import { supabase } from "../lib/supabase";
+import { logError } from "./observability";
+import { trackDailyAdherence } from "./adherenceService";
 
-function getToday() {
-  return new Date().toISOString().split("T")[0]; // YYYY-MM-DD
-}
-
-// 🔥 Obtener pastillas del día
 export async function loadRemotePastillas(userId) {
-  const today = getToday();
+  try {
+    const today = new Date().toISOString().split("T")[0];
 
-  // 1️⃣ schedules + medications
-  const { data: schedules, error: schedulesError } = await supabase
-    .from("schedules")
-    .select(`
-      id,
-      time,
-      medications (
+    // schedules
+    const { data: schedules, error: sError } = await supabase
+      .from("schedules")
+      .select(`
         id,
-        name,
-        dosage
-      )
-    `)
-    .eq("user_id", userId);
+        time,
+        dosage,
+        medications (
+          name
+        )
+      `)
+      .eq("user_id", userId);
 
-  if (schedulesError) {
-    console.log("ERROR schedules:", schedulesError);
-    throw schedulesError;
-  }
+    if (sError) throw sError;
 
-  // 2️⃣ intakes SOLO de hoy (🔥 CLAVE)
-  const { data: intakes, error: intakesError } = await supabase
-    .from("intakes")
-    .select("schedule_id, status")
-    .eq("taken_date", today);
+    // intakes SOLO HOY + USER
+    const { data: intakes, error: iError } = await supabase
+      .from("intakes")
+      .select(`
+        schedule_id,
+        status
+      `)
+      .eq("user_id", userId)
+      .eq("date(taken_at)", today);
 
-  if (intakesError) {
-    console.log("ERROR intakes:", intakesError);
-    throw intakesError;
-  }
+    if (iError) throw iError;
 
-  // 3️⃣ map de tomadas
-  const takenMap = new Map();
+    const takenMap = new Map<string, boolean>();
 
-  (intakes ?? []).forEach((i) => {
-    if (i.status === "taken") {
-      takenMap.set(i.schedule_id, true);
-    }
-  });
-
-  // 4️⃣ transformar formato app
-  return (schedules ?? []).map((s) => ({
-    id: s.id,
-    nombre: s.medications?.name ?? "Sin nombre",
-    cantidad: Number(s.medications?.dosage ?? 0),
-    tiempo: s.time,
-    tomada: takenMap.get(s.id) ?? false,
-  }));
-}
-
-// 🔘 Marcar como tomada (FIX REAL)
-export async function markAsTaken(scheduleId) {
-  const now = new Date().toISOString();
-  const today = getToday();
-
-  const { error } = await supabase
-    .from("intakes")
-    .upsert(
-      {
-        schedule_id: scheduleId,
-        taken_at: now,
-        taken_date: today, // 🔥 CLAVE
-        status: "taken",
-      },
-      {
-        onConflict: "schedule_id,taken_date", // 🔥 CORRECTO
+    (intakes ?? []).forEach((i: any) => {
+      if (i.status === "taken") {
+        takenMap.set(i.schedule_id, true);
       }
-    );
+    });
 
-  if (error) {
-    console.log("ERROR markAsTaken:", error);
-    throw error;
+    const result = (schedules ?? []).map((s: any) => ({
+      id: s.id,
+      nombre: s.medications?.name ?? "Sin nombre",
+      cantidad: Number(s.dosage ?? 1),
+      time: s.time,
+      tomada: takenMap.get(s.id) ?? false,
+    }));
+
+    // 🔥 adherencia (esto ya no rompe si RLS está bien)
+    const total = result.length;
+    const taken = result.filter((p) => p.tomada).length;
+
+    await trackDailyAdherence(userId, today, total, taken);
+
+    return result;
+  } catch (error) {
+    logError("loadRemotePastillas error", { error });
+    return [];
   }
 }

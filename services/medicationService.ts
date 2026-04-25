@@ -88,35 +88,33 @@ export async function loadRemotePastillas(userId: string): Promise<Pastilla[]> {
 export async function createMedicationWithSchedule(
   userId: string,
   name: string,
-  times: { time: string; dosage: number }[],
+  dosage: number,
+  time: string
 ) {
-  try {
-    // 1. crear medicamento
-    const { data: med, error: medError } = await supabase
-      .from("medications")
-      .insert({ name, user_id: userId })
-      .select()
-      .single();
+  // 1. medicamento
+  const { data: med, error: medError } = await supabase
+    .from("medications")
+    .insert({
+      name,
+      user_id: userId, // 🔥
+    })
+    .select()
+    .single();
 
-    if (medError) throw medError;
+  if (medError) throw medError;
 
-    // 2. crear schedules
-    const rows = times.map((t) => ({
-      user_id: userId,
+  // 2. schedule
+  const { error: schedError } = await supabase
+    .from("schedules")
+    .insert({
       medication_id: med.id,
-      time: t.time,
-      dosage: t.dosage,
-    }));
+      time,
+      dosage,
+      user_id: userId, // 🔥
+    });
 
-    const { error: schedError } = await supabase
-      .from("schedules")
-      .insert(rows);
+  if (schedError) throw schedError;
 
-    if (schedError) throw schedError;
-
-    return med;
-  } catch (error) {
-    logError("createMedicationWithSchedule error", { error });
-    throw error;
-  }
+  return med;
 }
+

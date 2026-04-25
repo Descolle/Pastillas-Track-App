@@ -66,16 +66,12 @@ export default function CreateMedication() {
 
       const timeStr = formatTime(time);
 
-      // 🔥 CREACIÓN CORRECTA (ARRAY)
+      // 🔥 CREACIÓN CORRECTA
       await createMedicationWithSchedule(
         user.id,
         name.trim(),
-        [
-          {
-            time: timeStr,
-            dosage: Number(dose),
-          },
-        ]
+        Number(dose),
+        timeStr
       );
 
       // 🔔 notificación

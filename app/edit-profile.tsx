@@ -2,10 +2,11 @@ import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/lib/supabase";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
-import { Alert, Pressable, ScrollView, TextInput, View } from "react-native";
+import { Alert, Platform, Pressable, ScrollView, TextInput, View } from "react-native";
 
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
+import DateTimePicker from "@react-native-community/datetimepicker";
 
 export default function EditProfile() {
   const { profile, refreshProfile } = useAuth();
@@ -15,6 +16,8 @@ export default function EditProfile() {
   const [apellido, setApellido] = useState("");
   const [genero, setGenero] = useState("");
   const [fecha, setFecha] = useState("");
+  const [fechaNacimiento, setFechaNacimiento] = useState<Date | null>(null);
+  const [showPicker, setShowPicker] = useState(false);
 
   const [loading, setLoading] = useState(false);
 
@@ -25,8 +28,21 @@ export default function EditProfile() {
       setApellido(profile.apellido || "");
       setGenero(profile.genero || "");
       setFecha(profile.fecha_nacimiento || "");
+      // Parse fecha_nacimiento to Date object for the picker
+      if (profile.fecha_nacimiento) {
+        const date = new Date(profile.fecha_nacimiento);
+        setFechaNacimiento(date);
+      }
     }
   }, [profile]);
+
+  const onChangeDate = (event: any, selectedDate?: Date) => {
+    setShowPicker(false);
+    if (selectedDate) {
+      setFechaNacimiento(selectedDate);
+      setFecha(selectedDate.toISOString().split("T")[0]);
+    }
+  };
 
   const handleSave = async () => {
     try {
@@ -151,20 +167,33 @@ export default function EditProfile() {
             <ThemedText type="defaultSemiBold" style={{ color: "#000000" }}>
               Fecha nacimiento
             </ThemedText>
-            <TextInput
-              value={fecha}
-              onChangeText={setFecha}
-              placeholder="YYYY-MM-DD"
+            <Pressable
+              onPress={() => setShowPicker(true)}
               style={{
                 marginTop: 10,
                 backgroundColor: "#FFFFFF",
                 borderRadius: 14,
                 paddingVertical: 14,
                 paddingHorizontal: 16,
-                color: "#111111",
-                fontSize: 16,
               }}
-            />
+            >
+              <ThemedText style={{ color: "#111111", fontSize: 16 }}>
+                {fechaNacimiento
+                  ? fechaNacimiento.toLocaleDateString()
+                  : "Seleccionar fecha"}
+              </ThemedText>
+            </Pressable>
+
+            {showPicker && (
+              <DateTimePicker
+                value={fechaNacimiento || new Date(2000, 0, 1)}
+                mode="date"
+                display={Platform.OS === "ios" ? "spinner" : "default"}
+                onChange={onChangeDate}
+                maximumDate={new Date()}
+                minimumDate={new Date(1900, 0, 1)} // Allow dates from 1900 onwards
+              />
+            )}
           </View>
 
           {/* Género */}

@@ -2,12 +2,12 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
-  Alert,
-  Platform,
-  Pressable,
-  ScrollView,
-  TextInput,
-  View,
+    Alert,
+    Platform,
+    Pressable,
+    ScrollView,
+    TextInput,
+    View,
 } from "react-native";
 
 import { ThemedText } from "@/components/themed-text";
@@ -201,6 +201,7 @@ export default function SignUp() {
                 display={Platform.OS === "ios" ? "spinner" : "default"}
                 onChange={onChangeDate}
                 maximumDate={new Date()}
+                minimumDate={new Date(1900, 0, 1)} // Allow dates from 1900 onwards
               />
             )}
           </View>

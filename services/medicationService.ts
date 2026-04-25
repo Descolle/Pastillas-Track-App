@@ -11,9 +11,6 @@ export type Pastilla = {
   days_of_week: number[];
 };
 
-//
-// 🧠 HELPERS (CLAVE)
-//
 function getTodayRange() {
   const start = new Date();
   start.setHours(0, 0, 0, 0);
@@ -27,36 +24,25 @@ function getTodayRange() {
   };
 }
 
-//
-// 🔥 LOAD DESDE SUPABASE
-//
 export async function loadRemotePastillas(userId: string): Promise<Pastilla[]> {
   try {
     const { start, end } = getTodayRange();
 
-    // 📅 schedules + meds
     const { data: schedulesData, error: schedulesError } = await supabase
       .from("schedules")
       .select(`
         id,
         time,
+        dosage,
         days_of_week,
         medications (
-          id,
-          name,
-          dosage
+          name
         )
       `)
       .eq("user_id", userId);
 
-    if (schedulesError) {
-      logError("loadRemotePastillas schedules error", {
-        error: schedulesError.message,
-      });
-      return [];
-    }
+    if (schedulesError) throw schedulesError;
 
-    // 💊 intakes SOLO del usuario (join)
     const { data: intakesData, error: intakesError } = await supabase
       .from("intakes")
       .select(`
@@ -71,14 +57,8 @@ export async function loadRemotePastillas(userId: string): Promise<Pastilla[]> {
       .gte("taken_at", start)
       .lte("taken_at", end);
 
-    if (intakesError) {
-      logError("loadRemotePastillas intakes error", {
-        error: intakesError.message,
-      });
-      return [];
-    }
+    if (intakesError) throw intakesError;
 
-    // 🧠 map de tomadas
     const takenMap = new Map<string, boolean>();
 
     (intakesData ?? []).forEach((i: any) => {
@@ -87,17 +67,18 @@ export async function loadRemotePastillas(userId: string): Promise<Pastilla[]> {
       }
     });
 
-    // 💊 construir lista
-    const medications: Pastilla[] = (schedulesData ?? []).map((schedule: any) => ({
-      id: schedule.id,
-      nombre: schedule.medications?.name ?? "Sin nombre",
-      cantidad: Number(schedule.medications?.dosage ?? 0),
-      time: schedule.time ?? "--:--",
-      tomada: takenMap.get(schedule.id) ?? false,
-      days_of_week: schedule.days_of_week ?? [0,1,2,3,4,5,6],
-    }));
+    const medications: Pastilla[] = (schedulesData ?? []).map(
+      (schedule: any) => ({
+        id: schedule.id,
+        nombre: schedule.medications?.name ?? "Sin nombre",
+        cantidad: Number(schedule.dosage ?? 1),
+        time: schedule.time ?? "--:--",
+        tomada: takenMap.get(schedule.id) ?? false,
+        days_of_week:
+          schedule.days_of_week ?? [0, 1, 2, 3, 4, 5, 6],
+      }),
+    );
 
-    // 📊 adherencia
     const total = medications.length;
     const taken = medications.filter((m) => m.tomada).length;
 
@@ -108,26 +89,21 @@ export async function loadRemotePastillas(userId: string): Promise<Pastilla[]> {
 
     return medications;
   } catch (error) {
-    logError("loadRemotePastillas unexpected error", { error });
+    logError("loadRemotePastillas error", { error });
     return [];
   }
 }
 
-//
-// 🔥 CREAR MEDICAMENTO + SCHEDULE
-//
 export async function createMedicationWithSchedule(
   userId: string,
   nombre: string,
-  dosis: number,
-  time: string,
+  times: { time: string; dosage: number }[],
 ) {
   try {
     const { data: med, error: medError } = await supabase
       .from("medications")
       .insert({
         name: nombre,
-        dosage: dosis,
         user_id: userId,
       })
       .select()
@@ -135,36 +111,31 @@ export async function createMedicationWithSchedule(
 
     if (medError) throw medError;
 
-    const { data: schedule, error: schedError } = await supabase
+    const rows = times.map((t) => ({
+      user_id: userId,
+      medication_id: med.id,
+      time: t.time,
+      dosage: t.dosage,
+      days_of_week: [0, 1, 2, 3, 4, 5, 6],
+    }));
+
+    const { error: schedError } = await supabase
       .from("schedules")
-      .insert({
-        user_id: userId,
-        medication_id: med.id,
-        time,
-        days_of_week: [0,1,2,3,4,5,6],
-      })
-      .select()
-      .single();
+      .insert(rows);
 
     if (schedError) throw schedError;
 
-    console.log("✅ CREATED:", { med, schedule });
-
-    return { med, schedule };
+    return med;
   } catch (error) {
     logError("createMedicationWithSchedule error", { error });
     throw error;
   }
 }
 
-//
-// 🔥 MARCAR COMO TOMADA (UPSERT REAL)
-//
-export async function markAsTaken(scheduleId: string, userId: string) {
+export async function markAsTaken(scheduleId: string) {
   try {
     const now = new Date().toISOString();
 
-    // 🔥 UPSERT (clave para evitar bugs)
     const { error } = await supabase
       .from("intakes")
       .upsert(
@@ -174,95 +145,13 @@ export async function markAsTaken(scheduleId: string, userId: string) {
           status: "taken",
         },
         {
-          onConflict: "schedule_id", // ⚠️ requiere unique index
-        }
+          onConflict: "schedule_id,taken_date",
+        },
       );
 
     if (error) throw error;
   } catch (error: any) {
     logError("markAsTaken error", { error: error.message });
-    throw error;
-  }
-}
-
-//
-// 📊 EVENTOS
-//
-export async function insertMedicationEvent(
-  userId: string | null,
-  medicationId: string,
-  eventType: "taken" | "untaken",
-) {
-  if (!userId) return;
-
-  const { error } = await supabase.from("medication_events").insert({
-    user_id: userId,
-    medication_id: medicationId,
-    event_type: eventType,
-  });
-
-  if (error) {
-    logError("insertMedicationEvent error", {
-      error: error.message,
-    });
-  }
-}
-
-//
-// 🗑 DELETE
-//
-export async function deleteMedication(scheduleId: string) {
-  try {
-    await supabase.from("intakes").delete().eq("schedule_id", scheduleId);
-
-    const { data: sched } = await supabase
-      .from("schedules")
-      .select("medication_id")
-      .eq("id", scheduleId)
-      .single();
-
-    if (!sched) return;
-
-    await supabase.from("schedules").delete().eq("id", scheduleId);
-    await supabase.from("medications").delete().eq("id", sched.medication_id);
-  } catch (error) {
-    logError("deleteMedication error", { error });
-    throw error;
-  }
-}
-
-//
-// ✏️ UPDATE
-//
-export async function updateMedication(
-  scheduleId: string,
-  nombre: string,
-  dosis: number,
-  time: string,
-) {
-  try {
-    const { data: sched } = await supabase
-      .from("schedules")
-      .select("medication_id")
-      .eq("id", scheduleId)
-      .single();
-
-    if (!sched) throw new Error("Schedule not found");
-
-    await supabase
-      .from("medications")
-      .update({
-        name: nombre,
-        dosage: dosis,
-      })
-      .eq("id", sched.medication_id);
-
-    await supabase
-      .from("schedules")
-      .update({ time })
-      .eq("id", scheduleId);
-  } catch (error) {
-    logError("updateMedication error", { error });
     throw error;
   }
 }

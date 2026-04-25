@@ -9,49 +9,33 @@ export default function AddMedicationScreen({ navigation }) {
   const { user } = useAuth();
 
   const [name, setName] = useState("");
-  const [dosage, setDosage] = useState("");
-  const [quantity, setQuantity] = useState("");
-  const [times, setTimes] = useState([]); // ["08:00", "20:00"]
+  const [times, setTimes] = useState([
+    { time: "08:00", dosage: 1 },
+  ]);
 
   const handleAdd = async () => {
-    if (!user) {
-      Alert.alert("Error", "Usuario no autenticado");
-      return;
-    }
+    if (!user) return;
 
-    if (!name || !dosage || !quantity) {
-      Alert.alert("Error", "Completa todos los campos");
+    if (!name || times.length === 0) {
+      Alert.alert("Error", "Completa los datos");
       return;
     }
 
     try {
-      // 1. Crear medicamento
+      // 1️⃣ medicamento
       const med = await createMedication(user.id, {
         name,
-        dosage,
-        quantity: parseInt(quantity),
       });
 
-      // ⚠️ IMPORTANTE: supabase devuelve array
-      const medicationId = med[0].id;
+      // 2️⃣ schedules con dosis
+      await createSchedules(user.id, med.id, times);
 
-      // 2. Crear horarios
-      if (times.length > 0) {
-        await createSchedules(medicationId, times);
-      }
-      for (const time of times) {
-        await scheduleNotification(name, time);
+      // 3️⃣ notificaciones
+      for (const t of times) {
+        await scheduleNotification(name, t.time);
       }
 
       Alert.alert("Éxito", "Medicamento agregado 💊");
-
-      // 3. Limpiar formulario
-      setName("");
-      setDosage("");
-      setQuantity("");
-      setTimes([]);
-
-      // 4. Volver a Home
       navigation.goBack();
     } catch (error) {
       Alert.alert("Error", error.message);
@@ -59,17 +43,47 @@ export default function AddMedicationScreen({ navigation }) {
   };
 
   return (
-    <View>
-      <TextInput placeholder="Nombre" value={name} onChangeText={setName} />
-      <TextInput placeholder="Dosis" value={dosage} onChangeText={setDosage} />
+    <View style={{ padding: 20 }}>
       <TextInput
-        placeholder="Cantidad"
-        value={quantity}
-        onChangeText={setQuantity}
-        keyboardType="numeric"
+        placeholder="Nombre"
+        value={name}
+        onChangeText={setName}
       />
 
-      <Button title="Agregar medicamento" onPress={handleAdd} />
+      {/* ejemplo simple */}
+      {times.map((t, i) => (
+        <View key={i} style={{ marginVertical: 10 }}>
+          <TextInput
+            value={t.time}
+            onChangeText={(val) => {
+              const copy = [...times];
+              copy[i].time = val;
+              setTimes(copy);
+            }}
+            placeholder="Hora (08:00)"
+          />
+
+          <TextInput
+            value={String(t.dosage)}
+            keyboardType="numeric"
+            onChangeText={(val) => {
+              const copy = [...times];
+              copy[i].dosage = Number(val) || 1;
+              setTimes(copy);
+            }}
+            placeholder="Cantidad"
+          />
+        </View>
+      ))}
+
+      <Button
+        title="Agregar horario"
+        onPress={() =>
+          setTimes([...times, { time: "12:00", dosage: 1 }])
+        }
+      />
+
+      <Button title="Guardar" onPress={handleAdd} />
     </View>
   );
 }

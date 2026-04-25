@@ -32,43 +32,51 @@ export default function Dashboard() {
         // Use consistent local date format to prevent duplicates
         const today = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD format in local timezone
 
-        // 🔥 traer intakes + relaciones
-        const { data, error } = await supabase
-          .from("intakes")
-          .select(
-            `
-            taken,
-            date,
-            schedules (
-              time,
-              medications (
-                name,
-                user_id
-              )
+        // First, get all active schedules for this user (like medication loading)
+        const { data: schedulesData, error: schedulesError } = await supabase
+          .from("schedules")
+          .select(`
+            id,
+            time,
+            medications (
+              id,
+              name,
+              user_id
             )
-          `,
-          )
-          .eq("date", today) // Single consistent date
+          `)
+          .eq("medications.user_id", user.id);
+
+        if (schedulesError) throw schedulesError;
+
+        // Then, get today's intakes to check taken status
+        const { data: intakesData, error: intakesError } = await supabase
+          .from("intakes")
+          .select("schedule_id, taken")
+          .eq("date", today)
           .eq("schedules.medications.user_id", user.id);
 
-        if (error) throw error;
+        if (intakesError) throw intakesError;
 
-        const total = data.length;
-        const taken = data.filter((i) => i.taken).length;
+        // Create a map of taken status for today
+        const takenStatusMap = new Map();
+        (intakesData ?? []).forEach((intake: any) => {
+          takenStatusMap.set(intake.schedule_id, intake.taken);
+        });
+
+        // Calculate stats based on all active schedules
+        const total = schedulesData?.length || 0;
+        const taken = Array.from(takenStatusMap.values()).filter(Boolean).length;
         const pending = total - taken;
 
         // 🔥 próxima dosis
         const now = new Date();
 
-        const next = data
-          .filter((i) => !i.taken)
-          .map((i) => {
-            // Handle nested data structure with proper type checking
-            const item = i as any; // Type assertion for complex nested structure
-            const schedule = item.schedules?.[0]; // schedules is likely an array
-            const medication = schedule?.medications;
+        const next = schedulesData
+          .filter((schedule: any) => !takenStatusMap.get(schedule.id))
+          .map((schedule: any) => {
+            const medication = schedule.medications;
             
-            if (!schedule || !medication) return null;
+            if (!medication) return null;
             
             const time = schedule.time;
             const [h, m] = time.split(":");

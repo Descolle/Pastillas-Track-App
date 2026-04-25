@@ -1,5 +1,6 @@
 import { supabase } from "@/lib/supabase";
 import { logError } from "@/services/observability";
+import { trackDailyAdherence } from "../services/adherenceService";
 
 export type Pastilla = {
   id: string; // schedule_id
@@ -19,43 +20,68 @@ export async function loadRemotePastillas(userId: string): Promise<Pastilla[]> {
     console.log("🔍 loadRemotePastillas - userId:", userId);
     console.log("🔍 loadRemotePastillas - today:", today);
 
-    const { data, error } = await supabase
-      .from("intakes")
-      .select(
-        `
-        schedule_id,
-        taken,
-        date,
-        schedules (
+    // First, get all active schedules for this user (regardless of intake date)
+    const { data: schedulesData, error: schedulesError } = await supabase
+      .from("schedules")
+      .select(`
+        id,
+        time,
+        medications (
           id,
-          time,
-          medications (
-            id,
-            name,
-            dosage,
-            user_id
-          )
+          name,
+          dosage,
+          user_id
         )
-      `,
-      )
-      .eq("date", today) // Single consistent date
-      .eq("schedules.medications.user_id", userId);
+      `)
+      .eq("medications.user_id", userId);
 
-    if (error) {
-      logError("loadRemotePastillas error", { error: error.message });
+    if (schedulesError) {
+      logError("loadRemotePastillas schedules error", { error: schedulesError.message });
       return [];
     }
 
-    console.log("📦 RAW DATA:", data);
-    console.log("📦 DATA LENGTH:", data?.length);
+    console.log("📦 SCHEDULES DATA:", schedulesData);
+    console.log("📦 SCHEDULES LENGTH:", schedulesData?.length);
 
-    return (data ?? []).map((i: any) => ({
-      id: i.schedule_id, // 🔥 IMPORTANTE
-      nombre: i.schedules?.medications?.name ?? "Sin nombre",
-      cantidad: Number(i.schedules?.medications?.dosage ?? 0),
-      time: i.schedules?.time ?? "--:--",
-      tomada: i.taken ?? false,
+    // Then, get today's intakes to check taken status
+    const { data: intakesData, error: intakesError } = await supabase
+      .from("intakes")
+      .select("schedule_id, taken")
+      .eq("date", today)
+      .eq("schedules.medications.user_id", userId);
+
+    if (intakesError) {
+      logError("loadRemotePastillas intakes error", { error: intakesError.message });
+      return [];
+    }
+
+    console.log("📦 INTAKES DATA:", intakesData);
+    console.log("📦 INTAKES LENGTH:", intakesData?.length);
+
+    // Create a map of taken status for today
+    const takenStatusMap = new Map();
+    (intakesData ?? []).forEach((intake: any) => {
+      takenStatusMap.set(intake.schedule_id, intake.taken);
+    });
+
+    // Combine schedules with taken status
+    const medications = (schedulesData ?? []).map((schedule: any) => ({
+      id: schedule.id,
+      nombre: schedule.medications?.name ?? "Sin nombre",
+      cantidad: Number(schedule.medications?.dosage ?? 0),
+      time: schedule.time ?? "--:--",
+      tomada: takenStatusMap.get(schedule.id) ?? false, // Default to false if no intake exists for today
     }));
+
+    // Track daily adherence for historical records
+    const totalMedications = schedulesData?.length || 0;
+    const takenMedications = Array.from(takenStatusMap.values()).filter(Boolean).length;
+    
+    if (totalMedications > 0) {
+      await trackDailyAdherence(userId, today, totalMedications, takenMedications);
+    }
+
+    return medications;
   } catch (error) {
     logError("loadRemotePastillas unexpected error", { error });
     return [];

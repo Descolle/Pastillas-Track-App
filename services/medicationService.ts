@@ -8,6 +8,7 @@ export type Pastilla = {
   cantidad: number;
   time: string;
   tomada: boolean;
+  days_of_week: number[]; // 0=domingo, 6=sábado
 };
 
 //
@@ -20,20 +21,20 @@ export async function loadRemotePastillas(userId: string): Promise<Pastilla[]> {
     console.log("🔍 loadRemotePastillas - userId:", userId);
     console.log("🔍 loadRemotePastillas - today:", today);
 
-    // First, get all active schedules for this user (regardless of intake date)
+    // Query schedules directly with medication info (new schema)
     const { data: schedulesData, error: schedulesError } = await supabase
       .from("schedules")
       .select(`
         id,
         time,
+        days_of_week,
         medications (
           id,
           name,
-          dosage,
-          user_id
+          dosage
         )
       `)
-      .eq("medications.user_id", userId);
+      .eq("user_id", userId);
 
     if (schedulesError) {
       logError("loadRemotePastillas schedules error", { error: schedulesError.message });
@@ -43,12 +44,11 @@ export async function loadRemotePastillas(userId: string): Promise<Pastilla[]> {
     console.log("📦 SCHEDULES DATA:", schedulesData);
     console.log("📦 SCHEDULES LENGTH:", schedulesData?.length);
 
-    // Then, get today's intakes to check taken status
+    // Get today's intakes to check taken status (using taken_at timestamp)
     const { data: intakesData, error: intakesError } = await supabase
       .from("intakes")
-      .select("schedule_id, taken")
-      .eq("date", today)
-      .eq("schedules.medications.user_id", userId);
+      .select("schedule_id, status, taken_at")
+      .eq("date", today); // Filter by date portion of taken_at
 
     if (intakesError) {
       logError("loadRemotePastillas intakes error", { error: intakesError.message });
@@ -61,20 +61,27 @@ export async function loadRemotePastillas(userId: string): Promise<Pastilla[]> {
     // Create a map of taken status for today
     const takenStatusMap = new Map();
     (intakesData ?? []).forEach((intake: any) => {
-      takenStatusMap.set(intake.schedule_id, intake.taken);
+      takenStatusMap.set(intake.schedule_id, intake.status === 'taken');
     });
 
-    // Combine schedules with taken status
-    const medications = (schedulesData ?? []).map((schedule: any) => ({
-      id: schedule.id,
-      nombre: schedule.medications?.name ?? "Sin nombre",
-      cantidad: Number(schedule.medications?.dosage ?? 0),
-      time: schedule.time ?? "--:--",
-      tomada: takenStatusMap.get(schedule.id) ?? false, // Default to false if no intake exists for today
-    }));
+    // Map schedules to Pastilla format
+    const medications: Pastilla[] = [];
+    
+    (schedulesData ?? []).forEach((schedule: any) => {
+      if (schedule.medications) {
+        medications.push({
+          id: schedule.id,
+          nombre: schedule.medications.name ?? "Sin nombre",
+          cantidad: Number(schedule.medications.dosage ?? 0),
+          time: schedule.time ?? "--:--",
+          tomada: takenStatusMap.get(schedule.id) ?? false, // Default to false if no intake exists for today
+          days_of_week: schedule.days_of_week ?? [0,1,2,3,4,5,6], // Default to all days
+        });
+      }
+    });
 
     // Track daily adherence for historical records
-    const totalMedications = schedulesData?.length || 0;
+    const totalMedications = medications.length;
     const takenMedications = Array.from(takenStatusMap.values()).filter(Boolean).length;
     
     if (totalMedications > 0) {
@@ -111,26 +118,28 @@ export async function createMedicationWithSchedule(
 
     if (medError) throw medError;
 
-    // 2. schedule
+    // 2. schedule (new schema with user_id and days_of_week)
     const { data: schedule, error: schedError } = await supabase
       .from("schedules")
       .insert({
+        user_id: userId,
         medication_id: med.id,
         time,
+        days_of_week: [0,1,2,3,4,5,6], // Default to all days
       })
       .select()
       .single();
 
     if (schedError) throw schedError;
 
-    // 3. Create intake for today
+    // 3. Create intake for today (new schema with taken_at and status)
     const today = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD format in local timezone
     const { error: intakeError } = await supabase
       .from("intakes")
       .insert({
         schedule_id: schedule.id,
-        date: today,
-        taken: false,
+        taken_at: null, // Not taken yet
+        status: 'missed', // Default status
       });
 
     if (intakeError) throw intakeError;
@@ -151,9 +160,12 @@ export async function markAsTaken(scheduleId: string) {
 
   const { error } = await supabase
     .from("intakes")
-    .update({ taken: true })
+    .update({ 
+      taken_at: new Date().toISOString(), // Current timestamp
+      status: 'taken' 
+    })
     .eq("schedule_id", scheduleId)
-    .eq("date", today);
+    .eq("date", today); // Filter by date portion of taken_at
 
   if (error) {
     logError("markAsTaken error", { error: error.message });

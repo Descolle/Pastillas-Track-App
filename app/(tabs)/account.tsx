@@ -32,7 +32,7 @@ export default function Dashboard() {
         // Use consistent local date format to prevent duplicates
         const today = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD format in local timezone
 
-        // First, get all active schedules for this user (like medication loading)
+        // Query schedules directly with medication info (new schema)
         const { data: schedulesData, error: schedulesError } = await supabase
           .from("schedules")
           .select(`
@@ -40,44 +40,47 @@ export default function Dashboard() {
             time,
             medications (
               id,
-              name,
-              user_id
+              name
             )
           `)
-          .eq("medications.user_id", user.id);
+          .eq("user_id", user.id);
 
         if (schedulesError) throw schedulesError;
 
-        // Then, get today's intakes to check taken status
+        // Get today's intakes to check taken status (using taken_at timestamp)
         const { data: intakesData, error: intakesError } = await supabase
           .from("intakes")
-          .select("schedule_id, taken")
-          .eq("date", today)
-          .eq("schedules.medications.user_id", user.id);
+          .select("schedule_id, status, taken_at")
+          .eq("date", today); // Filter by date portion of taken_at
 
         if (intakesError) throw intakesError;
 
         // Create a map of taken status for today
         const takenStatusMap = new Map();
         (intakesData ?? []).forEach((intake: any) => {
-          takenStatusMap.set(intake.schedule_id, intake.taken);
+          takenStatusMap.set(intake.schedule_id, intake.status === 'taken');
         });
 
-        // Calculate stats based on all active schedules
-        const total = schedulesData?.length || 0;
+        // Calculate total schedules (new schema - schedules are directly queried)
+        const total = (schedulesData ?? []).length;
         const taken = Array.from(takenStatusMap.values()).filter(Boolean).length;
         const pending = total - taken;
 
         // 🔥 próxima dosis
         const now = new Date();
+        const allSchedules: any[] = [];
 
-        const next = schedulesData
+        // Map schedules with medication names (new schema)
+        (schedulesData ?? []).forEach((schedule: any) => {
+          allSchedules.push({
+            ...schedule,
+            medicationName: schedule.medications?.name || "Sin nombre"
+          });
+        });
+
+        const next = allSchedules
           .filter((schedule: any) => !takenStatusMap.get(schedule.id))
           .map((schedule: any) => {
-            const medication = schedule.medications;
-            
-            if (!medication) return null;
-            
             const time = schedule.time;
             const [h, m] = time.split(":");
 
@@ -87,7 +90,7 @@ export default function Dashboard() {
             doseDate.setSeconds(0);
 
             return {
-              name: medication.name,
+              name: schedule.medicationName,
               time,
               date: doseDate,
             };

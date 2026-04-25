@@ -13,10 +13,10 @@ function AppStack() {
     requestPermissions();
   }, []);
   
-useEffect(() => {
-  initNotifications(); // 👈 IMPORTANTE
-  requestPermissions();
-}, []);
+  useEffect(() => {
+    initNotifications(); // 👈 IMPORTANTE
+    requestPermissions();
+  }, []);
 
   return (
     <MedicationProvider>

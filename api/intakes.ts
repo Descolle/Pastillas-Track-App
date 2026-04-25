@@ -20,7 +20,7 @@ export const generateTodayIntakes = async (userId: string) => {
   const { data: existing, error: existingError } = await supabase
     .from("intakes")
     .select("schedule_id")
-    .eq("date", today);
+    .eq("date(taken_at)", today); // Extract date from timestamp
 
   if (existingError) throw existingError;
 
@@ -30,8 +30,8 @@ export const generateTodayIntakes = async (userId: string) => {
     .filter((s: any) => !existingIds.has(s.id))
     .map((s: any) => ({
       schedule_id: s.id,
-      date: today,
-      taken: false,
+      taken_at: null, // New schema: null when not taken
+      status: 'missed', // New schema: default status
     }));
 
   if (newIntakes.length === 0) return;
@@ -50,9 +50,12 @@ export const markIntakeAsTaken = async (scheduleId: string) => {
 
   const { error } = await supabase
     .from("intakes")
-    .update({ taken: true })
+    .update({ 
+      taken_at: new Date().toISOString(), // New schema: timestamp when taken
+      status: 'taken' // New schema: status enum
+    })
     .eq("schedule_id", scheduleId)
-    .eq("date", today);
+    .eq("date(taken_at)", today); // Extract date from timestamp
 
   if (error) throw error;
 };

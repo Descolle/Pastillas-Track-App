@@ -29,17 +29,20 @@ export default function Dashboard() {
       if (!user) return;
 
       try {
-        // Use consistent local date format to prevent duplicates
-        const today = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD format in local timezone
+        // 🕐 Rango del día (LOCAL → ISO)
+        const start = new Date();
+        start.setHours(0, 0, 0, 0);
 
-        // Query schedules directly with medication info (new schema)
+        const end = new Date();
+        end.setHours(23, 59, 59, 999);
+
+        // 📅 Schedules + medicamentos
         const { data: schedulesData, error: schedulesError } = await supabase
           .from("schedules")
           .select(`
             id,
             time,
             medications (
-              id,
               name
             )
           `)
@@ -47,42 +50,48 @@ export default function Dashboard() {
 
         if (schedulesError) throw schedulesError;
 
-        // Get today's intakes to check taken status (using taken_at timestamp)
+        // 💊 Intakes del día (FILTRADO CORRECTO)
         const { data: intakesData, error: intakesError } = await supabase
           .from("intakes")
-          .select("schedule_id, status, taken_at")
-          .eq("date", today); // Filter by date portion of taken_at
+          .select(`
+            schedule_id,
+            status,
+            taken_at,
+            schedules!inner (
+              user_id
+            )
+          `)
+          .eq("schedules.user_id", user.id)
+          .gte("taken_at", start.toISOString())
+          .lte("taken_at", end.toISOString());
 
         if (intakesError) throw intakesError;
 
-        // Create a map of taken status for today
-        const takenStatusMap = new Map();
+        // 🧠 Map para saber qué schedules ya fueron tomados
+        const takenMap = new Map<string, boolean>();
+
         (intakesData ?? []).forEach((intake: any) => {
-          takenStatusMap.set(intake.schedule_id, intake.status === 'taken');
+          if (intake.status === "taken") {
+            takenMap.set(intake.schedule_id, true);
+          }
         });
 
-        // Calculate total schedules (new schema - schedules are directly queried)
+        // 📊 Stats
         const total = (schedulesData ?? []).length;
-        const taken = Array.from(takenStatusMap.values()).filter(Boolean).length;
+
+        const taken = (schedulesData ?? []).filter((s: any) =>
+          takenMap.get(s.id)
+        ).length;
+
         const pending = total - taken;
 
-        // 🔥 próxima dosis
+        // ⏰ Próxima dosis
         const now = new Date();
-        const allSchedules: any[] = [];
 
-        // Map schedules with medication names (new schema)
-        (schedulesData ?? []).forEach((schedule: any) => {
-          allSchedules.push({
-            ...schedule,
-            medicationName: schedule.medications?.name || "Sin nombre"
-          });
-        });
-
-        const next = allSchedules
-          .filter((schedule: any) => !takenStatusMap.get(schedule.id))
-          .map((schedule: any) => {
-            const time = schedule.time;
-            const [h, m] = time.split(":");
+        const next = (schedulesData ?? [])
+          .filter((s: any) => !takenMap.get(s.id))
+          .map((s: any) => {
+            const [h, m] = s.time.split(":");
 
             const doseDate = new Date();
             doseDate.setHours(Number(h));
@@ -90,23 +99,24 @@ export default function Dashboard() {
             doseDate.setSeconds(0);
 
             return {
-              name: schedule.medicationName,
-              time,
+              name: s.medications?.name || "Sin nombre",
+              time: s.time,
               date: doseDate,
             };
           })
-          .filter(Boolean) // Remove null entries
-          .filter((d) => d && d.date >= now)
-          .sort((a, b) => a!.date.getTime() - b!.date.getTime())[0];
+          .filter((d) => d.date >= now)
+          .sort((a, b) => a.date.getTime() - b.date.getTime())[0];
 
         setStats({
           total,
           taken,
           pending,
-          nextDose: next ? { name: next.name, time: next.time } : null,
+          nextDose: next
+            ? { name: next.name, time: next.time }
+            : null,
         });
       } catch (err) {
-        console.log("Error loading stats:", err);
+        console.log("❌ Error loading stats:", err);
       } finally {
         setLoading(false);
       }

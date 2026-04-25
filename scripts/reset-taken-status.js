@@ -1,4 +1,4 @@
-// Quick script to reset taken status for all medications
+// Quick script to reset taken status for all medications - UPDATED FOR NEW SCHEMA
 import { supabase } from '../lib/supabase.js';
 
 async function resetAllTakenStatus() {
@@ -7,8 +7,8 @@ async function resetAllTakenStatus() {
   try {
     const { error } = await supabase
       .from('intakes')
-      .update({ taken: false })
-      .neq('taken', false); // Only update those that are true
+      .update({ status: 'missed' })
+      .neq('status', 'missed'); // Only update those that are not missed
       
     if (error) {
       console.error("❌ Error resetting taken status:", error);

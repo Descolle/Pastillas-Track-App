@@ -14,8 +14,8 @@ export const getWeeklyStats = async (userId) => {
     .from("intakes")
     .select(
       `
-      date,
-      taken,
+      taken_at,
+      status,
       schedules (
         medications (
           user_id
@@ -23,17 +23,20 @@ export const getWeeklyStats = async (userId) => {
       )
     `,
     )
-    .in("date", last7Days)
+    .in("date(taken_at)", last7Days)
     .eq("schedules.medications.user_id", userId);
 
   if (error) throw error;
 
   // 📊 agrupar por día
   const daily = last7Days.map((date) => {
-    const dayData = data.filter((d) => d.date === date);
+    const dayData = data.filter((d) => {
+      const intakeDate = d.taken_at ? new Date(d.taken_at).toISOString().split("T")[0] : null;
+      return intakeDate === date;
+    });
 
     const total = dayData.length;
-    const taken = dayData.filter((d) => d.taken).length;
+    const taken = dayData.filter((d) => d.status === 'taken').length;
 
     const percentage = total === 0 ? 0 : Math.round((taken / total) * 100);
 
@@ -47,7 +50,7 @@ export const getWeeklyStats = async (userId) => {
 
   // 📊 promedio semanal
   const totalAll = data.length;
-  const takenAll = data.filter((d) => d.taken).length;
+  const takenAll = data.filter((d) => d.status === 'taken').length;
 
   const percentage =
     totalAll === 0 ? 0 : Math.round((takenAll / totalAll) * 100);

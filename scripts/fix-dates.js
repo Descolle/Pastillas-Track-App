@@ -1,5 +1,5 @@
 // Migration script to fix UTC date issues and reset taken status
-// Run this script once to fix existing data
+// Run this script once to fix existing data - UPDATED FOR NEW SCHEMA
 
 import { supabase } from '../lib/supabase.js';
 
@@ -20,26 +20,24 @@ async function fixDatesAndResetStatus() {
     console.log(`📊 Found ${intakes.length} intakes to process`);
     
     // Fix dates and reset taken status for all intakes
-    const today = new Date().toLocaleDateString('en-CA'); // Local date YYYY-MM-DD
+    const today = new Date().toISOString(); // Full timestamp for new schema
     
     for (const intake of intakes) {
-      // Convert UTC date to local date if needed
-      const localDate = intake.date.includes('T') 
-        ? new Date(intake.date).toLocaleDateString('en-CA')
-        : intake.date;
+      // Convert old date to new taken_at timestamp if needed
+      const takenAt = intake.taken_at ? intake.taken_at : null;
       
       const { error: updateError } = await supabase
         .from('intakes')
         .update({ 
-          date: localDate,
-          taken: false // Reset taken status for fresh start
+          taken_at: takenAt,
+          status: 'missed' // Reset status for fresh start
         })
         .eq('id', intake.id);
         
       if (updateError) {
         console.error(`❌ Error updating intake ${intake.id}:`, updateError);
       } else {
-        console.log(`✅ Fixed intake ${intake.id}: ${intake.date} -> ${localDate}, taken: false`);
+        console.log(`✅ Fixed intake ${intake.id}: status -> missed`);
       }
     }
     

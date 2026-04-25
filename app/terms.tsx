@@ -62,9 +62,9 @@ export default function TermsScreen() {
 
           <View style={styles.gap}>
             <Text style={[styles.body, { color: '#000000' }]}>
-              <Text style={[styles.subtitle, { color: '#000000' }]}>1. Aceptación de Términos</Text>
-              {"\n\n"}
-              Al utilizar esta aplicación de seguimiento de medicamentos ("Pastillas Track"), usted acepta y se compromete a cumplir estos términos y condiciones.
+                Al usar RecuerdaMed, aceptas nuestros términos de servicio y política de privacidad. 
+                Estos documentos explican cómo manejamos tus datos y qué puedes esperar de nuestra aplicación.
+              Al utilizar esta aplicación de seguimiento de medicamentos (&quot;Pastillas Track&quot;), usted acepta y se compromete a cumplir estos términos y condiciones.
               
               {"\n\n"}
               <Text style={[styles.subtitle, { color: '#000000' }]}>2. Descripción del Servicio</Text>
@@ -144,7 +144,7 @@ export default function TermsScreen() {
               • Actualizaciones regulares del servicio
               
               {"\n\n"}
-              Al hacer clic en "Acepto", usted confirma que ha leído, entendido y aceptado estos términos y condiciones.
+              Al hacer clic en &quot;Acepto&quot;, usted confirma que ha leído, entendido y aceptado estos términos y condiciones.
             </Text>
           </View>
 

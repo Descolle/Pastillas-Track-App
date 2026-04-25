@@ -2,24 +2,21 @@ import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
-  ActivityIndicator,
-  Pressable,
-  ScrollView,
-  View,
+    ActivityIndicator,
+    Pressable,
+    ScrollView,
+    View,
 } from "react-native";
 
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { useAuth } from "@/context/AuthContext";
-import { getWeeklyStats } from "@/src/api/stats";
 
-type WeeklyStats = {
+type TodayStats = {
+  total: number;
+  taken: number;
+  pending: number;
   percentage: number;
-  streak: number;
-  daily: {
-    day: string;
-    percentage: number;
-  }[];
 };
 
 const Bar = ({ value }: { value: number }) => {
@@ -40,7 +37,7 @@ export default function Profile() {
   const { profile, user, signOut } = useAuth();
   const router = useRouter();
 
-  const [stats, setStats] = useState<WeeklyStats | null>(null);
+  const [stats, setStats] = useState<TodayStats | null>(null);
   const [statsLoading, setStatsLoading] = useState(true);
 
   useEffect(() => {
@@ -53,7 +50,7 @@ export default function Profile() {
 
       try {
         setStatsLoading(true);
-        const data = await getWeeklyStats(user.id);
+        const data = await getTodayStats(user.id);
         setStats(data);
       } catch (error) {
         console.log("profile stats error:", error);

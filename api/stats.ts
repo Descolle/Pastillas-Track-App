@@ -8,7 +8,8 @@ export const getTodayStats = async (userId: string) => {
   const { data, error } = await supabase
     .from("intakes")
     .select(`
-      taken,
+      status,
+      taken_at,
       schedules (
         time,
         medications (
@@ -17,15 +18,15 @@ export const getTodayStats = async (userId: string) => {
         )
       )
     `)
-    .eq("date", today) // Single consistent date
+    .eq("date(taken_at)", today) // Extract date from timestamp
     .eq("schedules.medications.user_id", userId);
 
   if (error) throw error;
 
   const stats = {
     total: data?.length || 0,
-    taken: data?.filter((i: any) => i.taken).length || 0,
-    pending: data?.filter((i: any) => !i.taken).length || 0,
+    taken: data?.filter((i: any) => i.status === 'taken').length || 0,
+    pending: data?.filter((i: any) => i.status === 'missed').length || 0,
     percentage: 0,
   };
 

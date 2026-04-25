@@ -9,13 +9,10 @@ import {
 
 import { useAuth } from "@/context/AuthContext";
 import {
-  deleteMedication,
-  insertMedicationEvent,
   loadRemotePastillas,
+  markAsTaken,
   type Pastilla,
 } from "@/services/medicationService";
-
-import { markAsTaken, unmarkAsTaken } from "@/services/intakeService";
 
 import { logError } from "@/services/observability";
 import type { PlanTier } from "@/types/saas";
@@ -102,19 +99,18 @@ export const MedicationProvider = ({
   };
 
   //
-  // ❌ DELETE REAL
+  // ❌ DELETE (solo UI por ahora)
   //
   const removePastillaById = async (id: string) => {
     try {
-      await deleteMedication(id);
-      await refreshRemote();
+      setPastillas((prev) => prev.filter((p) => p.id !== id));
     } catch (error) {
       logError("removePastilla error", { error });
     }
   };
 
   //
-  // ✅ TOGGLE REAL (TAKEN / UNTAKEN)
+  // ✅ TOGGLE (TAKEN)
   //
   const trackMedicationToggle = async (
     id: string,
@@ -123,15 +119,7 @@ export const MedicationProvider = ({
     try {
       if (nextTomada) {
         await markAsTaken(id);
-      } else {
-        await unmarkAsTaken(id);
       }
-
-      await insertMedicationEvent(
-        user?.id ?? null,
-        id,
-        nextTomada ? "taken" : "untaken",
-      );
 
       await refreshRemote();
     } catch (error) {

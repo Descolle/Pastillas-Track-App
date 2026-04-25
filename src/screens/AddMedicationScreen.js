@@ -1,9 +1,8 @@
 import { scheduleNotification } from "@/utils/notification";
 import { useState } from "react";
 import { Alert, Button, TextInput, View } from "react-native";
-import { createMedication } from "../api/medications";
-import { createSchedules } from "../api/schedules";
-import { useAuth } from "../hooks/useAuth";
+import { useAuth } from "@/context/AuthContext";
+import { createMedicationWithSchedule } from "@/services/medicationService";
 
 export default function AddMedicationScreen({ navigation }) {
   const { user } = useAuth();
@@ -14,7 +13,10 @@ export default function AddMedicationScreen({ navigation }) {
   ]);
 
   const handleAdd = async () => {
-    if (!user) return;
+    if (!user) {
+      Alert.alert("Error", "Usuario no autenticado");
+      return;
+    }
 
     if (!name || times.length === 0) {
       Alert.alert("Error", "Completa los datos");
@@ -22,22 +24,19 @@ export default function AddMedicationScreen({ navigation }) {
     }
 
     try {
-      // 1️⃣ medicamento
-      const med = await createMedication(user.id, {
-        name,
-      });
+      // 🔥 CREACIÓN REAL (UNIFICADA)
+      await createMedicationWithSchedule(user.id, name, times);
 
-      // 2️⃣ schedules con dosis
-      await createSchedules(user.id, med.id, times);
-
-      // 3️⃣ notificaciones
+      // 🔔 notificaciones
       for (const t of times) {
         await scheduleNotification(name, t.time);
       }
 
       Alert.alert("Éxito", "Medicamento agregado 💊");
+
       navigation.goBack();
     } catch (error) {
+      console.log("CREATE ERROR:", error);
       Alert.alert("Error", error.message);
     }
   };
@@ -50,7 +49,6 @@ export default function AddMedicationScreen({ navigation }) {
         onChangeText={setName}
       />
 
-      {/* ejemplo simple */}
       {times.map((t, i) => (
         <View key={i} style={{ marginVertical: 10 }}>
           <TextInput

@@ -8,28 +8,31 @@ function getToday() {
  * ✅ Marcar una dosis como tomada (UPSERT seguro)
  */
 export async function markAsTaken(scheduleId: string) {
-  const now = new Date().toISOString();
-  const today = getToday();
+  try {
+    const now = new Date().toISOString();
+    const today = now.split("T")[0];
 
-  const { error } = await supabase
-    .from("intakes")
-    .upsert(
-      {
-        schedule_id: scheduleId,
-        taken_at: now,
-        taken_date: today,
-        status: "taken",
-      },
-      {
-        onConflict: "schedule_id,taken_date",
-      }
-    );
+    const { error } = await supabase
+      .from("intakes")
+      .upsert(
+        {
+          schedule_id: scheduleId,
+          taken_at: now,
+          taken_date: today,
+          status: "taken",
+        },
+        {
+          onConflict: "schedule_id,taken_date",
+        },
+      );
 
-  if (error) {
-    console.log("❌ markAsTaken error:", error);
+    if (error) throw error;
+  } catch (error) {
+    console.log("markAsTaken error:", error);
     throw error;
   }
 }
+
 
 /**
  * 🔄 (opcional) Desmarcar como tomada

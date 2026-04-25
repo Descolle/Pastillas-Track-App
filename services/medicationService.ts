@@ -1,6 +1,6 @@
 import { supabase } from "@/lib/supabase";
 import { logError } from "@/services/observability";
-import { trackDailyAdherence } from "../services/adherenceService";
+import { trackDailyAdherence } from "./adherenceService";
 
 export type Pastilla = {
   id: string;
@@ -8,7 +8,6 @@ export type Pastilla = {
   cantidad: number;
   time: string;
   tomada: boolean;
-  days_of_week: number[];
 };
 
 function getTodayRange() {
@@ -28,66 +27,58 @@ export async function loadRemotePastillas(userId: string): Promise<Pastilla[]> {
   try {
     const { start, end } = getTodayRange();
 
-    const { data: schedulesData, error: schedulesError } = await supabase
+    // schedules + meds
+    const { data: schedules, error: sError } = await supabase
       .from("schedules")
       .select(`
         id,
         time,
         dosage,
-        days_of_week,
         medications (
           name
         )
       `)
       .eq("user_id", userId);
 
-    if (schedulesError) throw schedulesError;
+    if (sError) throw sError;
 
-    const { data: intakesData, error: intakesError } = await supabase
+    // intakes del día
+    const { data: intakes, error: iError } = await supabase
       .from("intakes")
       .select(`
         schedule_id,
         status,
-        taken_at,
-        schedules!inner (
-          user_id
-        )
+        taken_at
       `)
-      .eq("schedules.user_id", userId)
       .gte("taken_at", start)
       .lte("taken_at", end);
 
-    if (intakesError) throw intakesError;
+    if (iError) throw iError;
 
     const takenMap = new Map<string, boolean>();
 
-    (intakesData ?? []).forEach((i: any) => {
+    (intakes ?? []).forEach((i: any) => {
       if (i.status === "taken") {
         takenMap.set(i.schedule_id, true);
       }
     });
 
-    const medications: Pastilla[] = (schedulesData ?? []).map(
-      (schedule: any) => ({
-        id: schedule.id,
-        nombre: schedule.medications?.name ?? "Sin nombre",
-        cantidad: Number(schedule.dosage ?? 1),
-        time: schedule.time ?? "--:--",
-        tomada: takenMap.get(schedule.id) ?? false,
-        days_of_week:
-          schedule.days_of_week ?? [0, 1, 2, 3, 4, 5, 6],
-      }),
-    );
+    const result: Pastilla[] = (schedules ?? []).map((s: any) => ({
+      id: s.id,
+      nombre: s.medications?.name ?? "Sin nombre",
+      cantidad: Number(s.dosage ?? 1),
+      time: s.time,
+      tomada: takenMap.get(s.id) ?? false,
+    }));
 
-    const total = medications.length;
-    const taken = medications.filter((m) => m.tomada).length;
+    // stats
+    const total = result.length;
+    const taken = result.filter((p) => p.tomada).length;
+    const today = new Date().toISOString().split("T")[0];
 
-    if (total > 0) {
-      const today = new Date().toISOString().split("T")[0];
-      await trackDailyAdherence(userId, today, total, taken);
-    }
+    await trackDailyAdherence(userId, today, total, taken);
 
-    return medications;
+    return result;
   } catch (error) {
     logError("loadRemotePastillas error", { error });
     return [];
@@ -96,27 +87,25 @@ export async function loadRemotePastillas(userId: string): Promise<Pastilla[]> {
 
 export async function createMedicationWithSchedule(
   userId: string,
-  nombre: string,
+  name: string,
   times: { time: string; dosage: number }[],
 ) {
   try {
+    // 1. crear medicamento
     const { data: med, error: medError } = await supabase
       .from("medications")
-      .insert({
-        name: nombre,
-        user_id: userId,
-      })
+      .insert({ name, user_id: userId })
       .select()
       .single();
 
     if (medError) throw medError;
 
+    // 2. crear schedules
     const rows = times.map((t) => ({
       user_id: userId,
       medication_id: med.id,
       time: t.time,
       dosage: t.dosage,
-      days_of_week: [0, 1, 2, 3, 4, 5, 6],
     }));
 
     const { error: schedError } = await supabase
@@ -138,20 +127,15 @@ export async function markAsTaken(scheduleId: string) {
 
     const { error } = await supabase
       .from("intakes")
-      .upsert(
-        {
-          schedule_id: scheduleId,
-          taken_at: now,
-          status: "taken",
-        },
-        {
-          onConflict: "schedule_id,taken_date",
-        },
-      );
+      .insert({
+        schedule_id: scheduleId,
+        taken_at: now,
+        status: "taken",
+      });
 
     if (error) throw error;
-  } catch (error: any) {
-    logError("markAsTaken error", { error: error.message });
+  } catch (error) {
+    logError("markAsTaken error", { error });
     throw error;
   }
 }

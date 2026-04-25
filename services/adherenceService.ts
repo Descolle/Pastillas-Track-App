@@ -28,49 +28,28 @@ export async function trackDailyAdherence(
   date: string,
   totalMedications: number,
   takenMedications: number
-): Promise<void> {
+) {
   try {
-    const adherencePercentage =
-      totalMedications > 0
-        ? Math.round((takenMedications / totalMedications) * 100)
-        : 0;
-
-    // 🔥 UPSERT (evita duplicados y race conditions)
     const { error } = await supabase
       .from("adherence_history")
       .upsert(
         {
           user_id: userId,
           date,
-          total_medications: totalMedications,
-          taken_medications: takenMedications,
-          adherence_percentage: adherencePercentage,
+          total: totalMedications,   // ✅ FIX
+          taken: takenMedications,   // ✅ FIX
         },
         {
-          onConflict: "user_id,date", // ⚠️ requiere índice único
+          onConflict: "user_id,date",
         }
       );
 
-    if (error) {
-      logError("trackDailyAdherence upsert error", {
-        error: error.message,
-      });
-      throw error;
-    }
+    if (error) throw error;
 
-    console.log("📊 Adherence tracked:", {
-      userId,
-      date,
-      totalMedications,
-      takenMedications,
-      adherencePercentage: `${adherencePercentage}%`,
-    });
   } catch (error) {
-    logError("trackDailyAdherence unexpected error", { error });
-    throw error;
+    logError("trackDailyAdherence error", { error });
   }
 }
-
 //
 // 🔥 GET HISTORY
 //

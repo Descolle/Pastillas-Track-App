@@ -10,9 +10,9 @@ import {
 import { useAuth } from "@/context/AuthContext";
 import {
   loadRemotePastillas,
-  markAsTaken,
   type Pastilla,
 } from "@/services/medicationService";
+import { markAsTaken } from "../services/intakeServices";
 
 import { logError } from "@/services/observability";
 import type { PlanTier } from "@/types/saas";

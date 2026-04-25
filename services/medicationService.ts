@@ -120,22 +120,3 @@ export async function createMedicationWithSchedule(
     throw error;
   }
 }
-
-export async function markAsTaken(scheduleId: string) {
-  try {
-    const now = new Date().toISOString();
-
-    const { error } = await supabase
-      .from("intakes")
-      .insert({
-        schedule_id: scheduleId,
-        taken_at: now,
-        status: "taken",
-      });
-
-    if (error) throw error;
-  } catch (error) {
-    logError("markAsTaken error", { error });
-    throw error;
-  }
-}

@@ -14,7 +14,7 @@ export default function LegalScreen() {
       <ScrollView contentContainerStyle={{ padding: 24, paddingBottom: 40 }}>
         <View
           style={{
-            backgroundColor: "rgba(255,255,255,0.08)",
+            backgroundColor: "rgba(255, 255, 255, 0.99)",
             borderRadius: 24,
             padding: 24,
             borderWidth: 1,
@@ -83,7 +83,6 @@ export default function LegalScreen() {
               </ThemedText>
             </View>
           </View>
-          
           <Pressable
             onPress={() => router.back()}
             style={{

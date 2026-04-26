@@ -1,23 +1,18 @@
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
-import {
-    ActivityIndicator,
-    Pressable,
-    ScrollView,
-    View,
-} from "react-native";
+import { ActivityIndicator, Pressable, ScrollView, View } from "react-native";
 
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { useAuth } from "@/context/AuthContext";
+import { getWeeklyAdherence } from "@/services/adherenceService";
 
-type TodayStats = {
-  total: number;
-  taken: number;
-  pending: number;
+type WeeklyStats = {
+  date: string;
+  day: string;
   percentage: number;
-};
+}[];
 
 const Bar = ({ value }: { value: number }) => {
   return (
@@ -37,12 +32,12 @@ export default function Profile() {
   const { profile, user, signOut } = useAuth();
   const router = useRouter();
 
-  const [stats, setStats] = useState<TodayStats | null>(null);
+  const [stats, setStats] = useState<WeeklyStats | null>(null);
   const [statsLoading, setStatsLoading] = useState(true);
 
   useEffect(() => {
     const loadStats = async () => {
-      if (!user) {
+      if (!user?.id) {
         setStats(null);
         setStatsLoading(false);
         return;
@@ -50,7 +45,9 @@ export default function Profile() {
 
       try {
         setStatsLoading(true);
-        const data = await getTodayStats(user.id);
+
+        const data = await getWeeklyAdherence(user.id);
+
         setStats(data);
       } catch (error) {
         console.log("profile stats error:", error);
@@ -94,12 +91,17 @@ export default function Profile() {
   return (
     <ThemedView style={{ flex: 1 }} lightColor="#F7F3EC">
       <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 40 }}>
-        <ThemedText type="title" style={{ color: "#fdfafa" }}>PERFIL</ThemedText>
+        <ThemedText type="title" style={{ color: "#fdfafa" }}>
+          PERFIL
+        </ThemedText>
 
         {!profile ? (
-          <ThemedText style={{ marginTop: 20, color: "#000000" }}>Cargando perfil...</ThemedText>
+          <ThemedText style={{ marginTop: 20, color: "#000000" }}>
+            Cargando perfil...
+          </ThemedText>
         ) : (
           <>
+            {/* PROFILE CARD */}
             <View
               style={{
                 backgroundColor: "#FFF7E8",
@@ -128,19 +130,30 @@ export default function Profile() {
                 {profile.nombre} {profile.apellido}
               </ThemedText>
 
-              <ThemedText style={{ opacity: 0.65, color: "#000000" }}>{user?.email}</ThemedText>
+              <ThemedText style={{ opacity: 0.65, color: "#000000" }}>
+                {user?.email}
+              </ThemedText>
 
               <View style={{ marginTop: 16, gap: 6 }}>
-                {edad !== null && <ThemedText style={{ color: "#000000" }}>{edad} años</ThemedText>}
+                {edad !== null && (
+                  <ThemedText style={{ color: "#000000" }}>
+                    {edad} años
+                  </ThemedText>
+                )}
+
                 {profile.genero && (
                   <ThemedText style={{ color: "#000000" }}>
                     {generoMap[profile.genero] || profile.genero}
                   </ThemedText>
                 )}
-                <ThemedText style={{ color: "#000000" }}>Plan: {profile.plan || "free"}</ThemedText>
+
+                <ThemedText style={{ color: "#000000" }}>
+                  Plan: {profile.plan || "free"}
+                </ThemedText>
               </View>
             </View>
 
+            {/* STATS CARD */}
             <View
               style={{
                 backgroundColor: "#EDF5FF",
@@ -151,7 +164,9 @@ export default function Profile() {
                 borderColor: "#CFE1FA",
               }}
             >
-              <ThemedText type="subtitle" style={{ color: "#000000" }}>Tu progreso</ThemedText>
+              <ThemedText type="subtitle" style={{ color: "#000000" }}>
+                Tu progreso
+              </ThemedText>
 
               {statsLoading ? (
                 <View style={{ paddingVertical: 24 }}>
@@ -159,10 +174,11 @@ export default function Profile() {
                 </View>
               ) : !stats ? (
                 <ThemedText style={{ marginTop: 12, color: "#000000" }}>
-                  Aun no hay estadisticas disponibles.
+                  Aún no hay estadísticas disponibles.
                 </ThemedText>
               ) : (
                 <>
+                  {/* SUMMARY */}
                   <View
                     style={{
                       flexDirection: "row",
@@ -181,31 +197,30 @@ export default function Profile() {
                       <ThemedText style={{ opacity: 0.7, color: "#000000" }}>
                         Cumplimiento semanal
                       </ThemedText>
-                      <ThemedText style={{ fontSize: 30, fontWeight: "700", color: "#000000" }}>
-                        {stats.percentage}%
-                      </ThemedText>
-                    </View>
 
-                    <View
-                      style={{
-                        flex: 1,
-                        backgroundColor: "#FDF1E3",
-                        padding: 16,
-                        borderRadius: 16,
-                      }}
-                    >
-                      <ThemedText style={{ opacity: 0.7, color: "#000000" }}>
-                        Racha actual
-                      </ThemedText>
-                      <ThemedText style={{ fontSize: 30, fontWeight: "700", color: "#000000" }}>
-                        {stats.streak}
+                      <ThemedText
+                        style={{
+                          fontSize: 30,
+                          fontWeight: "700",
+                          color: "#000000",
+                        }}
+                      >
+                        {Math.round(
+                          stats.reduce((acc, d) => acc + d.percentage, 0) /
+                            stats.length,
+                        )}
+                        %
                       </ThemedText>
                     </View>
                   </View>
 
+                  {/* CHART */}
                   <View style={{ marginTop: 20 }}>
-                    <ThemedText type="defaultSemiBold" style={{ color: "#000000" }}>
-                      Ultimos 7 dias
+                    <ThemedText
+                      type="defaultSemiBold"
+                      style={{ color: "#000000" }}
+                    >
+                      Últimos 7 días
                     </ThemedText>
 
                     <View
@@ -217,8 +232,8 @@ export default function Profile() {
                         marginTop: 14,
                       }}
                     >
-                      {stats.daily.map((day) => (
-                        <Bar key={day.day} value={day.percentage} />
+                      {stats.map((day) => (
+                        <Bar key={day.date} value={day.percentage} />
                       ))}
                     </View>
 
@@ -229,8 +244,11 @@ export default function Profile() {
                         marginTop: 8,
                       }}
                     >
-                      {stats.daily.map((day) => (
-                        <ThemedText key={day.day} style={{ fontSize: 10, color: "#000000" }}>
+                      {stats.map((day) => (
+                        <ThemedText
+                          key={day.date}
+                          style={{ fontSize: 10, color: "#000000" }}
+                        >
                           {day.day}
                         </ThemedText>
                       ))}
@@ -240,6 +258,7 @@ export default function Profile() {
               )}
             </View>
 
+            {/* ACTIONS */}
             <Pressable
               onPress={() => router.push("/edit-profile")}
               style={{

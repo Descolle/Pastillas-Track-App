@@ -12,8 +12,11 @@ import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { useAuth } from "@/context/AuthContext";
 import { useMedication } from "@/context/MedicationContext";
-import { createMedicationWithSchedule } from "@/services/medicationService";
-import { scheduleNotification } from "@/utils/notification";
+import {
+  createMedicationWithSchedule,
+  loadRemotePastillas,
+} from "@/services/medicationService";
+import { scheduleMedicationNotification } from "@/services/notificationService";
 
 export default function CreateMedication() {
   const { user } = useAuth();
@@ -49,7 +52,7 @@ export default function CreateMedication() {
     if (!canCreateMedication) {
       return Alert.alert(
         "Límite alcanzado",
-        "Tu plan actual ya alcanzó el máximo de medicamentos."
+        "Tu plan actual ya alcanzó el máximo de medicamentos.",
       );
     }
 
@@ -66,23 +69,31 @@ export default function CreateMedication() {
 
       const timeStr = formatTime(time);
 
-      // 🔥 CREACIÓN CORRECTA
       await createMedicationWithSchedule(
         user.id,
         name.trim(),
         Number(dose),
-        timeStr
+        timeStr,
       );
 
-      // 🔔 notificación
-      await scheduleNotification(name, timeStr);
+      const newMedication = (
+        await loadRemotePastillas(user.id)
+      ).find(
+        (p) => p.nombre === name.trim() && p.time === timeStr,
+      );
 
-      // 🔄 refrescar datos
+      if (newMedication) {
+        await scheduleMedicationNotification(
+          newMedication.id,
+          name,
+          timeStr,
+        );
+      }
+
       await refreshRemote();
 
       Alert.alert("Guardado", "Medicamento creado correctamente");
 
-      // limpiar
       setName("");
       setDose("");
       setTime(new Date());
@@ -113,11 +124,9 @@ export default function CreateMedication() {
           <ThemedText
             style={{ marginTop: 10, opacity: 0.72, color: "#000000" }}
           >
-            Agrega un medicamento con su dosis y horario para recordarlo cada
-            día.
+            Agrega un medicamento con su dosis y horario para recordarlo cada día.
           </ThemedText>
 
-          {/* NOMBRE */}
           <View
             style={{
               marginTop: 22,
@@ -139,7 +148,6 @@ export default function CreateMedication() {
             />
           </View>
 
-          {/* DOSIS */}
           <View
             style={{
               marginTop: 14,
@@ -162,7 +170,6 @@ export default function CreateMedication() {
             />
           </View>
 
-          {/* HORA */}
           <View
             style={{
               marginTop: 14,
@@ -190,12 +197,6 @@ export default function CreateMedication() {
               </ThemedText>
             </Pressable>
 
-            <ThemedText
-              style={{ marginTop: 8, opacity: 0.65, color: "#000000" }}
-            >
-              Se usará para programar el recordatorio diario.
-            </ThemedText>
-
             {showPicker && (
               <DateTimePicker
                 value={time}
@@ -210,7 +211,6 @@ export default function CreateMedication() {
             )}
           </View>
 
-          {/* BOTÓN */}
           <Pressable
             onPress={handleSave}
             disabled={loading}

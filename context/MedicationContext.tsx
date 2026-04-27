@@ -10,11 +10,19 @@ import {
 import { useAuth } from "@/context/AuthContext";
 import { markAsTaken } from "@/services/intakeServices";
 import { deleteMedication } from "@/services/medicationDeleteService";
-import { updateMedicationDose, updateMedicationTime } from "@/services/medicationEditService";
+import {
+  updateMedicationDose,
+  updateMedicationTime,
+} from "@/services/medicationEditService";
 import {
   loadRemotePastillas,
   type Pastilla,
 } from "@/services/medicationService";
+
+import {
+  cancelMedicationNotification,
+  scheduleMedicationNotification,
+} from "@/services/notificationService";
 
 import { logError } from "@/services/observability";
 import type { PlanTier } from "@/types/saas";
@@ -88,8 +96,7 @@ export const MedicationProvider = ({
     [planTier],
   );
 
-  const canCreateMedication =
-    pastillas.length < limits.maxMedications;
+  const canCreateMedication = pastillas.length < limits.maxMedications;
 
   //
   // 🔄 REFRESH
@@ -102,16 +109,16 @@ export const MedicationProvider = ({
   };
 
   //
-  // DELETE
+  // 🗑️ DELETE (NO TOCADO, solo notificación correcta)
   //
   const removePastillaById = async (id: string) => {
     try {
-      // Delete from database
+      await cancelMedicationNotification(id); // 🔥 FIX
+
       await deleteMedication(id);
-      
-      // Remove from UI immediately
+
       setPastillas((prev) => prev.filter((p) => p.id !== id));
-      
+
       console.log("🗑️ DELETE PASTILLA SUCCESS:", { id });
     } catch (error) {
       logError("removePastilla error", { error });
@@ -120,26 +127,33 @@ export const MedicationProvider = ({
   };
 
   //
-  // UPDATE
+  // ✏️ UPDATE (NO TOCADO, solo notificación correcta)
   //
   const updatePastillaById = async (id: string, pastilla: Pastilla) => {
     try {
-      // Update dose if provided
       if (pastilla.cantidad !== undefined) {
         await updateMedicationDose(id, pastilla.cantidad);
       }
 
-      // Update time if provided
       if (pastilla.time !== undefined) {
         await updateMedicationTime(id, pastilla.time);
+
+        const medication = pastillas.find((p) => p.id === id);
+
+        if (medication) {
+          await cancelMedicationNotification(id); // 🔥 FIX
+
+          await scheduleMedicationNotification(
+            id,
+            medication.nombre,
+            pastilla.time,
+          );
+        }
       }
 
-      // Update in UI immediately
-      setPastillas((prev) => 
-        prev.map((p) => p.id === id ? { ...p, ...pastilla } : p)
+      setPastillas((prev) =>
+        prev.map((p) => (p.id === id ? { ...p, ...pastilla } : p)),
       );
-      
-      console.log("🔧 UPDATE PASTILLA SUCCESS:", { id, pastilla });
     } catch (error) {
       logError("updatePastilla error", { error });
       throw error;
@@ -147,26 +161,19 @@ export const MedicationProvider = ({
   };
 
   //
-  // TOGGLE (TAKEN)
+  // 🔥 TOGGLE (TAKEN)
   //
   const trackMedicationToggle = async (
     id: string,
     nextTomada: boolean,
   ) => {
     try {
-      console.log("🔥 TOGGLE CALLED:", { id, nextTomada, userId: user?.id });
-      
       if (nextTomada && user?.id) {
-        console.log("🔥 CALLING markAsTaken...");
         await markAsTaken(id, user.id);
-        console.log("🔥 markAsTaken SUCCESS");
       }
 
-      console.log("🔥 REFRESHING...");
       await refreshRemote();
-      console.log("🔥 REFRESH SUCCESS");
     } catch (error) {
-      console.log("🔥 TOGGLE ERROR:", error);
       logError("trackMedicationToggle error", { error });
     }
   };

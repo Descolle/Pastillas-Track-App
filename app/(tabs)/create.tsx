@@ -1,17 +1,12 @@
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useState } from "react";
-import {
-  Alert,
-  Pressable,
-  ScrollView,
-  TextInput,
-  View,
-} from "react-native";
+import { Alert, Pressable, ScrollView, TextInput, View } from "react-native";
 
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { useAuth } from "@/context/AuthContext";
 import { useMedication } from "@/context/MedicationContext";
+import { useSettings } from "@/context/SettingsContext";
 import {
   createMedicationWithSchedule,
   loadRemotePastillas,
@@ -21,6 +16,7 @@ import { scheduleMedicationNotification } from "@/services/notificationService";
 export default function CreateMedication() {
   const { user } = useAuth();
   const { refreshRemote, canCreateMedication } = useMedication();
+  const { t, theme } = useSettings();
 
   const [name, setName] = useState("");
   const [dose, setDose] = useState("");
@@ -30,11 +26,11 @@ export default function CreateMedication() {
 
   const inputStyle = {
     marginTop: 10,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: theme === "dark" ? "#111827" : "#FFFFFF",
     borderRadius: 14,
     paddingVertical: 14,
     paddingHorizontal: 16,
-    color: "#111111",
+    color: theme === "dark" ? "#FFFFFF" : "#111111",
     fontSize: 16,
   } as const;
 
@@ -46,22 +42,19 @@ export default function CreateMedication() {
 
   const handleSave = async () => {
     if (!user) {
-      return Alert.alert("Error", "Debes iniciar sesión");
+      return Alert.alert(t("error"), t("mustSignIn"));
     }
 
     if (!canCreateMedication) {
-      return Alert.alert(
-        "Límite alcanzado",
-        "Tu plan actual ya alcanzó el máximo de medicamentos.",
-      );
+      return Alert.alert(t("limitReached"), t("planLimitReached"));
     }
 
     if (!name.trim()) {
-      return Alert.alert("Error", "El nombre es obligatorio");
+      return Alert.alert(t("error"), t("nameRequired"));
     }
 
     if (!dose || Number(dose) <= 0) {
-      return Alert.alert("Error", "Dosis inválida");
+      return Alert.alert(t("error"), t("invalidDose"));
     }
 
     try {
@@ -76,73 +69,69 @@ export default function CreateMedication() {
         timeStr,
       );
 
-      const newMedication = (
-        await loadRemotePastillas(user.id)
-      ).find(
+      const newMedication = (await loadRemotePastillas(user.id)).find(
         (p) => p.nombre === name.trim() && p.time === timeStr,
       );
 
       if (newMedication) {
-        await scheduleMedicationNotification(
-          newMedication.id,
-          name,
-          timeStr,
-        );
+        await scheduleMedicationNotification(newMedication.id, name, timeStr);
       }
 
       await refreshRemote();
 
-      Alert.alert("Guardado", "Medicamento creado correctamente");
+      Alert.alert(t("saved"), t("medicationCreated"));
 
       setName("");
       setDose("");
       setTime(new Date());
     } catch (error: any) {
       console.log("CREATE ERROR:", error);
-      Alert.alert("Error", error?.message || "No se pudo guardar");
+      Alert.alert(t("error"), error?.message || t("couldNotSave"));
     } finally {
       setLoading(false);
     }
   };
+
+  const surface = theme === "dark" ? "#1F2937" : "#EDF5FF";
+  const fieldSurface = theme === "dark" ? "#273548" : "#FFF7E8";
+  const textColor = theme === "dark" ? "#FFFFFF" : "#000000";
 
   return (
     <ThemedView style={{ flex: 1 }} lightColor="#F7F3EC">
       <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 40 }}>
         <View
           style={{
-            backgroundColor: "#EDF5FF",
+            backgroundColor: surface,
             borderRadius: 24,
             padding: 24,
             borderWidth: 1,
-            borderColor: "#CFE1FA",
+            borderColor: theme === "dark" ? "#344055" : "#CFE1FA",
           }}
         >
-          <ThemedText type="title" style={{ color: "#000000" }}>
-            Nuevo Medicamento
+          <ThemedText type="title" style={{ color: textColor }}>
+            {t("newMedication")}
           </ThemedText>
 
-          <ThemedText
-            style={{ marginTop: 10, opacity: 0.72, color: "#000000" }}
-          >
-            Agrega un medicamento con su dosis y horario para recordarlo cada día.
+          <ThemedText style={{ marginTop: 10, opacity: 0.72, color: textColor }}>
+            {t("newMedicationDescription")}
           </ThemedText>
 
           <View
             style={{
               marginTop: 22,
-              backgroundColor: "#FDF1E3",
+              backgroundColor: fieldSurface,
               borderRadius: 20,
               padding: 18,
             }}
           >
-            <ThemedText type="defaultSemiBold" style={{ color: "#000000" }}>
-              Nombre
+            <ThemedText type="defaultSemiBold" style={{ color: textColor }}>
+              {t("name")}
             </ThemedText>
 
             <TextInput
               value={name}
               onChangeText={setName}
-              placeholder="Ej: Paracetamol"
+              placeholder={t("exampleMedicine")}
               placeholderTextColor="#6B7280"
               style={inputStyle}
             />
@@ -151,19 +140,19 @@ export default function CreateMedication() {
           <View
             style={{
               marginTop: 14,
-              backgroundColor: "#FFF7E8",
+              backgroundColor: fieldSurface,
               borderRadius: 20,
               padding: 18,
             }}
           >
-            <ThemedText type="defaultSemiBold" style={{ color: "#000000" }}>
-              Dosis
+            <ThemedText type="defaultSemiBold" style={{ color: textColor }}>
+              {t("dose")}
             </ThemedText>
 
             <TextInput
               value={dose}
               onChangeText={setDose}
-              placeholder="Ej: 1"
+              placeholder={t("exampleDose")}
               keyboardType="numeric"
               placeholderTextColor="#6B7280"
               style={inputStyle}
@@ -173,26 +162,17 @@ export default function CreateMedication() {
           <View
             style={{
               marginTop: 14,
-              backgroundColor: "#FFF7E8",
+              backgroundColor: fieldSurface,
               borderRadius: 20,
               padding: 18,
             }}
           >
-            <ThemedText type="defaultSemiBold" style={{ color: "#000000" }}>
-              Horario
+            <ThemedText type="defaultSemiBold" style={{ color: textColor }}>
+              {t("time")}
             </ThemedText>
 
-            <Pressable
-              onPress={() => setShowPicker(true)}
-              style={{
-                marginTop: 10,
-                backgroundColor: "#FFFFFF",
-                borderRadius: 14,
-                paddingVertical: 14,
-                paddingHorizontal: 16,
-              }}
-            >
-              <ThemedText style={{ color: "#000000" }}>
+            <Pressable onPress={() => setShowPicker(true)} style={inputStyle}>
+              <ThemedText style={{ color: textColor }}>
                 {formatTime(time)}
               </ThemedText>
             </Pressable>
@@ -228,7 +208,7 @@ export default function CreateMedication() {
                 fontWeight: "700",
               }}
             >
-              {loading ? "Guardando..." : "Guardar medicamento"}
+              {loading ? t("saving") : t("saveMedication")}
             </ThemedText>
           </Pressable>
         </View>

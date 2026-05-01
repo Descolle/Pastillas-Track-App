@@ -1,12 +1,6 @@
+import { useSettings } from "@/context/SettingsContext";
 import React, { useState } from "react";
-import {
-    Alert,
-    Modal,
-    Pressable,
-    StyleSheet,
-    TextInput,
-    View
-} from "react-native";
+import { Alert, Modal, Pressable, StyleSheet, TextInput, View } from "react-native";
 import { ThemedText } from "./themed-text";
 
 interface MedicationEditModalProps {
@@ -26,110 +20,97 @@ export default function MedicationEditModal({
   currentTime,
   editMode,
 }: MedicationEditModalProps) {
+  const { t, theme } = useSettings();
   const [dosisInput, setDosisInput] = useState(currentDosis.toString());
   const [timeInput, setTimeInput] = useState(currentTime);
 
   const handleSave = () => {
     if (editMode === "dosis") {
       const dosis = parseInt(dosisInput);
-      
+
       if (isNaN(dosis) || dosis < 0) {
-        Alert.alert("Error", "Ingresa un número válido mayor o igual a 0");
+        Alert.alert(t("error"), t("invalidNumber"));
         return;
       }
-      
+
       if (dosis === 0) {
-        Alert.alert(
-          "Eliminar medicamento",
-          "¿Estás seguro de que quieres eliminar este medicamento?",
-          [
-            { text: "Cancelar", style: "cancel" },
-            {
-              text: "Eliminar",
-              style: "destructive",
-              onPress: () => onSave(0),
-            },
-          ]
-        );
+        Alert.alert(t("delete"), t("deleteMedicationQuestion"), [
+          { text: t("cancel"), style: "cancel" },
+          {
+            text: t("delete"),
+            style: "destructive",
+            onPress: () => onSave(0),
+          },
+        ]);
       } else {
         onSave(dosis);
       }
     } else {
-      // Time editing
       if (!timeInput || timeInput.trim() === "") {
-        Alert.alert("Error", "Ingresa una hora válida");
+        Alert.alert(t("error"), t("invalidTime"));
         return;
       }
-      
-      // Validate time format HH:MM
+
       const timeRegex = /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/;
       if (!timeRegex.test(timeInput.trim())) {
-        Alert.alert("Error", "Usa el formato HH:MM (ej: 08:30)");
+        Alert.alert(t("error"), t("invalidTime"));
         return;
       }
-      
+
       onSave(undefined, timeInput.trim());
     }
   };
 
-  const resetInputs = () => {
-    setDosisInput(currentDosis.toString());
-    setTimeInput(currentTime);
-  };
-
   React.useEffect(() => {
     if (visible) {
-      resetInputs();
+      setDosisInput(currentDosis.toString());
+      setTimeInput(currentTime);
     }
   }, [visible, currentDosis, currentTime]);
+
+  const dark = theme === "dark";
 
   return (
     <Modal
       visible={visible}
-      transparent={true}
+      transparent
       animationType="fade"
       onRequestClose={onClose}
     >
       <View style={modalStyles.overlay}>
-        <View style={modalStyles.container}>
+        <View style={[modalStyles.container, dark && modalStyles.containerDark]}>
           <ThemedText style={modalStyles.title}>
-            {editMode === "dosis" ? "Editar dosis" : "Editar hora"}
+            {editMode === "dosis" ? t("editDose") : t("editTime")}
           </ThemedText>
-          
+
           {editMode === "dosis" ? (
             <View style={modalStyles.inputContainer}>
               <ThemedText style={modalStyles.label}>
-                Nueva dosis (0 para eliminar):
+                {t("newDose")} ({t("zeroToDelete")}):
               </ThemedText>
               <TextInput
-                style={modalStyles.input}
+                style={[modalStyles.input, dark && modalStyles.inputDark]}
                 value={dosisInput}
                 onChangeText={setDosisInput}
                 keyboardType="numeric"
-                placeholder="Ingresa la dosis"
+                placeholder={t("newDose")}
                 placeholderTextColor="#999"
                 autoFocus
               />
-              <ThemedText style={modalStyles.hint}>
-                Ejemplos: 1, 2, 3.5, 10, etc.
-              </ThemedText>
+              <ThemedText style={modalStyles.hint}>1, 2, 3.5, 10</ThemedText>
             </View>
           ) : (
             <View style={modalStyles.inputContainer}>
-              <ThemedText style={modalStyles.label}>
-                Nueva hora:
-              </ThemedText>
+              <ThemedText style={modalStyles.label}>{t("newTime")}:</ThemedText>
               <TextInput
-                style={modalStyles.input}
+                style={[modalStyles.input, dark && modalStyles.inputDark]}
                 value={timeInput}
                 onChangeText={setTimeInput}
                 placeholder="HH:MM"
                 placeholderTextColor="#999"
                 autoFocus
               />
-              <ThemedText style={modalStyles.hint}>
-                Formato: HH:MM (ej: 08:30, 14:45, 22:00)
-              </ThemedText>
+              <ThemedText style={modalStyles.hint}>{t("timeFormat")}</ThemedText>
             </View>
           )}
 
@@ -138,14 +119,18 @@ export default function MedicationEditModal({
               style={[modalStyles.button, modalStyles.cancelButton]}
               onPress={onClose}
             >
-              <ThemedText style={modalStyles.cancelButtonText}>Cancelar</ThemedText>
+              <ThemedText style={modalStyles.cancelButtonText}>
+                {t("cancel")}
+              </ThemedText>
             </Pressable>
-            
+
             <Pressable
               style={[modalStyles.button, modalStyles.saveButton]}
               onPress={handleSave}
             >
-              <ThemedText style={modalStyles.saveButtonText}>Guardar</ThemedText>
+              <ThemedText style={modalStyles.saveButtonText}>
+                {t("save")}
+              </ThemedText>
             </Pressable>
           </View>
         </View>
@@ -177,12 +162,14 @@ const modalStyles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 5,
   },
+  containerDark: {
+    backgroundColor: "#1F2327",
+  },
   title: {
     fontSize: 20,
     fontWeight: "700",
     textAlign: "center",
     marginBottom: 20,
-    color: "#000000",
   },
   inputContainer: {
     marginBottom: 24,
@@ -191,14 +178,19 @@ const modalStyles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "500",
     marginBottom: 8,
-    color: "#000000",
   },
   input: {
     borderWidth: 1,
+    borderColor: "#D1D5DB",
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
     marginBottom: 8,
+    color: "#111111",
+  },
+  inputDark: {
+    borderColor: "#4B5563",
+    color: "#FFFFFF",
   },
   hint: {
     fontSize: 12,

@@ -6,6 +6,7 @@ import { ActivityIndicator, Pressable, ScrollView, View } from "react-native";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { useAuth } from "@/context/AuthContext";
+import { useSettings } from "@/context/SettingsContext";
 import { getWeeklyAdherence } from "@/services/adherenceService";
 
 type WeeklyStats = {
@@ -30,6 +31,7 @@ const Bar = ({ value }: { value: number }) => {
 
 export default function Profile() {
   const { profile, user, signOut } = useAuth();
+  const { t, theme } = useSettings();
   const router = useRouter();
 
   const [stats, setStats] = useState<WeeklyStats | null>(null);
@@ -45,10 +47,7 @@ export default function Profile() {
 
       try {
         setStatsLoading(true);
-
-        const data = await getWeeklyAdherence(user.id);
-
-        setStats(data);
+        setStats(await getWeeklyAdherence(user.id));
       } catch (error) {
         console.log("profile stats error:", error);
         setStats(null);
@@ -79,37 +78,35 @@ export default function Profile() {
   };
 
   const generoMap: Record<string, string> = {
-    male: "Hombre",
-    female: "Mujer",
-    male_trans: "Hombre trans",
-    female_trans: "Mujer trans",
-    other: "Otro",
+    male: t("male"),
+    female: t("female"),
+    male_trans: t("maleTrans"),
+    female_trans: t("femaleTrans"),
+    other: t("other"),
   };
 
   const edad = calcularEdad(profile?.fecha_nacimiento);
+  const cardBg = theme === "dark" ? "#1F2937" : "#FFF7E8";
+  const statsBg = theme === "dark" ? "#273548" : "#EDF5FF";
+  const textColor = theme === "dark" ? "#FFFFFF" : "#000000";
 
   return (
     <ThemedView style={{ flex: 1 }} lightColor="#F7F3EC">
       <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 40 }}>
-        <ThemedText type="title" style={{ color: "#fdfafa" }}>
-          PERFIL
-        </ThemedText>
+        <ThemedText type="title">{t("profileTitle")}</ThemedText>
 
         {!profile ? (
-          <ThemedText style={{ marginTop: 20, color: "#000000" }}>
-            Cargando perfil...
-          </ThemedText>
+          <ThemedText style={{ marginTop: 20 }}>{t("loadingProfile")}</ThemedText>
         ) : (
           <>
-            {/* PROFILE CARD */}
             <View
               style={{
-                backgroundColor: "#FFF7E8",
+                backgroundColor: cardBg,
                 padding: 20,
                 borderRadius: 22,
                 marginTop: 20,
                 borderWidth: 1,
-                borderColor: "#F0D9A7",
+                borderColor: theme === "dark" ? "#344055" : "#F0D9A7",
               }}
             >
               <View
@@ -126,46 +123,45 @@ export default function Profile() {
                 <MaterialIcons name="person" size={34} color="#FFFFFF" />
               </View>
 
-              <ThemedText type="subtitle" style={{ color: "#000000" }}>
+              <ThemedText type="subtitle" style={{ color: textColor }}>
                 {profile.nombre} {profile.apellido}
               </ThemedText>
 
-              <ThemedText style={{ opacity: 0.65, color: "#000000" }}>
+              <ThemedText style={{ opacity: 0.65, color: textColor }}>
                 {user?.email}
               </ThemedText>
 
               <View style={{ marginTop: 16, gap: 6 }}>
                 {edad !== null && (
-                  <ThemedText style={{ color: "#000000" }}>
-                    {edad} años
+                  <ThemedText style={{ color: textColor }}>
+                    {edad} {t("years")}
                   </ThemedText>
                 )}
 
                 {profile.genero && (
-                  <ThemedText style={{ color: "#000000" }}>
+                  <ThemedText style={{ color: textColor }}>
                     {generoMap[profile.genero] || profile.genero}
                   </ThemedText>
                 )}
 
-                <ThemedText style={{ color: "#000000" }}>
-                  Plan: {profile.plan || "free"}
+                <ThemedText style={{ color: textColor }}>
+                  {t("plan")}: {profile.plan || "free"}
                 </ThemedText>
               </View>
             </View>
 
-            {/* STATS CARD */}
             <View
               style={{
-                backgroundColor: "#EDF5FF",
+                backgroundColor: statsBg,
                 padding: 20,
                 borderRadius: 22,
                 marginTop: 16,
                 borderWidth: 1,
-                borderColor: "#CFE1FA",
+                borderColor: theme === "dark" ? "#344055" : "#CFE1FA",
               }}
             >
-              <ThemedText type="subtitle" style={{ color: "#000000" }}>
-                Tu progreso
+              <ThemedText type="subtitle" style={{ color: textColor }}>
+                {t("weeklyProgress")}
               </ThemedText>
 
               {statsLoading ? (
@@ -173,12 +169,11 @@ export default function Profile() {
                   <ActivityIndicator />
                 </View>
               ) : !stats ? (
-                <ThemedText style={{ marginTop: 12, color: "#000000" }}>
-                  Aún no hay estadísticas disponibles.
+                <ThemedText style={{ marginTop: 12, color: textColor }}>
+                  {t("noStats")}
                 </ThemedText>
               ) : (
                 <>
-                  {/* SUMMARY */}
                   <View
                     style={{
                       flexDirection: "row",
@@ -189,20 +184,20 @@ export default function Profile() {
                     <View
                       style={{
                         flex: 1,
-                        backgroundColor: "#FFFFFF",
+                        backgroundColor: theme === "dark" ? "#111827" : "#FFFFFF",
                         padding: 16,
                         borderRadius: 16,
                       }}
                     >
-                      <ThemedText style={{ opacity: 0.7, color: "#000000" }}>
-                        Cumplimiento semanal
+                      <ThemedText style={{ opacity: 0.7, color: textColor }}>
+                        {t("weeklyAdherence")}
                       </ThemedText>
 
                       <ThemedText
                         style={{
                           fontSize: 30,
                           fontWeight: "700",
-                          color: "#000000",
+                          color: textColor,
                         }}
                       >
                         {Math.round(
@@ -214,13 +209,12 @@ export default function Profile() {
                     </View>
                   </View>
 
-                  {/* CHART */}
                   <View style={{ marginTop: 20 }}>
                     <ThemedText
                       type="defaultSemiBold"
-                      style={{ color: "#000000" }}
+                      style={{ color: textColor }}
                     >
-                      Últimos 7 días
+                      {t("lastSevenDays")}
                     </ThemedText>
 
                     <View
@@ -247,7 +241,7 @@ export default function Profile() {
                       {stats.map((day) => (
                         <ThemedText
                           key={day.date}
-                          style={{ fontSize: 10, color: "#000000" }}
+                          style={{ fontSize: 10, color: textColor }}
                         >
                           {day.day}
                         </ThemedText>
@@ -258,7 +252,6 @@ export default function Profile() {
               )}
             </View>
 
-            {/* ACTIONS */}
             <Pressable
               onPress={() => router.push("/edit-profile")}
               style={{
@@ -269,7 +262,7 @@ export default function Profile() {
               }}
             >
               <ThemedText style={{ textAlign: "center", color: "#173B67" }}>
-                Editar perfil
+                {t("editProfile")}
               </ThemedText>
             </Pressable>
 
@@ -277,15 +270,15 @@ export default function Profile() {
               onPress={() => router.push("/legal")}
               style={{
                 marginTop: 12,
-                backgroundColor: "#FFFFFF",
+                backgroundColor: theme === "dark" ? "#111827" : "#FFFFFF",
                 padding: 14,
                 borderRadius: 16,
                 borderWidth: 1,
-                borderColor: "#E9E0D5",
+                borderColor: theme === "dark" ? "#344055" : "#E9E0D5",
               }}
             >
-              <ThemedText style={{ textAlign: "center", color: "#000000" }}>
-                Privacidad y datos
+              <ThemedText style={{ textAlign: "center", color: textColor }}>
+                {t("privacyData")}
               </ThemedText>
             </Pressable>
 
@@ -293,13 +286,13 @@ export default function Profile() {
               onPress={signOut}
               style={{
                 marginTop: 20,
-                backgroundColor: "#E7EEF7",
+                backgroundColor: theme === "dark" ? "#273548" : "#E7EEF7",
                 padding: 14,
                 borderRadius: 16,
               }}
             >
-              <ThemedText style={{ textAlign: "center", color: "#000000" }}>
-                Cerrar sesión
+              <ThemedText style={{ textAlign: "center", color: textColor }}>
+                {t("signOut")}
               </ThemedText>
             </Pressable>
           </>

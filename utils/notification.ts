@@ -1,24 +1,15 @@
+import { getStoredNotificationSound } from "@/context/SettingsContext";
 import * as Notifications from "expo-notifications";
 import { Platform } from "react-native";
 
-const CHANNEL_ID = "medicamentos";
+const CHANNEL_PREFIX = "medicamentos";
 
 let handlerInitialized = false;
 
-// 🎵 Available loud notification sounds
-const LOUD_SOUNDS = [
-  "pill_reminder_1.wav",
-  "pill_reminder_2.wav", 
-  "pill_reminder_3.wav"
-];
-
-// 🎲 Get random loud sound
-function getRandomLoudSound(): string {
-  const randomIndex = Math.floor(Math.random() * LOUD_SOUNDS.length);
-  return LOUD_SOUNDS[randomIndex];
+function getChannelId(sound: string) {
+  return `${CHANNEL_PREFIX}_${sound.replace(".wav", "")}`;
 }
 
-// 🔊 inicializar handler SOLO cuando la app esté lista
 export function initNotifications() {
   if (handlerInitialized) return;
 
@@ -35,34 +26,37 @@ export function initNotifications() {
   handlerInitialized = true;
 }
 
-// 📱 canal Android - Configured for maximum volume
-async function setupChannel() {
+async function setupChannel(sound: string) {
   if (Platform.OS !== "android") return;
 
-  await Notifications.setNotificationChannelAsync(CHANNEL_ID, {
-    name: "Recordatorios de Medicamentos",
-    description: "Recordatorios para tomar medicamentos a tiempo",
+  await Notifications.setNotificationChannelAsync(getChannelId(sound), {
+    name: "Medication reminders",
+    description: "Reminders to take medications on time",
     importance: Notifications.AndroidImportance.MAX,
     vibrationPattern: [0, 250, 250, 250],
     lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
-    sound: "pill_reminder_1.wav", // Default loud sound
+    sound,
     enableLights: true,
     lightColor: "#FF0000",
     enableVibrate: true,
   });
 }
 
-// ✅ permisos
 export async function requestPermissions() {
-  await setupChannel();
+  const sound = await getStoredNotificationSound();
+  await setupChannel(sound);
 
   const { status } = await Notifications.requestPermissionsAsync();
   return status === "granted";
 }
 
-// ⏰ programar notificación diaria con sonido alto
-export async function scheduleNotification(nombre: string, hora: string) {
-  await setupChannel();
+export async function scheduleNotification(
+  nombre: string,
+  hora: string,
+  sound?: string,
+) {
+  const selectedSound = sound ?? (await getStoredNotificationSound());
+  await setupChannel(selectedSound);
 
   const [h, m] = hora.split(":").map(Number);
 
@@ -74,28 +68,28 @@ export async function scheduleNotification(nombre: string, hora: string) {
     m < 0 ||
     m > 59
   ) {
-    throw new Error("Hora inválida");
+    throw new Error("Invalid time");
   }
 
-  // 🎲 Select random loud sound
-  const selectedSound = getRandomLoudSound();
+  const channelId = getChannelId(selectedSound);
 
   return await Notifications.scheduleNotificationAsync({
     content: {
-      title: "💊 ¡HORA DE TU MEDICAMENTO!",
-      body: `Es hora de tomar: ${nombre}`,
+      title: "Medication time",
+      body: `Time to take: ${nombre}`,
       sound: selectedSound,
       priority: Notifications.AndroidNotificationPriority.HIGH,
-      ...(Platform.OS === "android" ? { 
-        channelId: CHANNEL_ID,
-        // Additional Android-specific settings for louder notifications
-        android: {
-          channelId: CHANNEL_ID,
-          priority: Notifications.AndroidNotificationPriority.HIGH,
-          autoCancel: false,
-          ongoing: false,
-        }
-      } : {}),
+      ...(Platform.OS === "android"
+        ? {
+            channelId,
+            android: {
+              channelId,
+              priority: Notifications.AndroidNotificationPriority.HIGH,
+              autoCancel: false,
+              ongoing: false,
+            },
+          }
+        : {}),
     },
     trigger: {
       type: Notifications.SchedulableTriggerInputTypes.DAILY,
@@ -105,7 +99,6 @@ export async function scheduleNotification(nombre: string, hora: string) {
   });
 }
 
-// ❌ cancelar
 export async function cancelNotification(id: string) {
   await Notifications.cancelScheduledNotificationAsync(id);
 }

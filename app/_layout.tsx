@@ -1,5 +1,6 @@
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { MedicationProvider } from "@/context/MedicationContext";
+import { SettingsProvider } from "@/context/SettingsContext";
 import { useTermsAgreement } from "@/hooks/use-terms-agreement";
 import { initNotifications, requestPermissions } from "@/utils/notification";
 import { Stack } from "expo-router";
@@ -55,7 +56,9 @@ function AppStack() {
 export default function RootLayout() {
   return (
     <AuthProvider>
-      <AppStack />
+      <SettingsProvider>
+        <AppStack />
+      </SettingsProvider>
     </AuthProvider>
   );
 }

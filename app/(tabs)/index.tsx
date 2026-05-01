@@ -1,60 +1,54 @@
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { useState } from "react";
-import {
-    ActivityIndicator,
-    Alert,
-    FlatList,
-    Pressable,
-    View
-} from "react-native";
+import { ActivityIndicator, Alert, FlatList, Pressable, View } from "react-native";
 
+import MedicationEditModal from "@/components/MedicationEditModal";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
-import { useAuth } from "@/context/AuthContext";
 import { useMedication } from "@/context/MedicationContext";
+import { useSettings } from "@/context/SettingsContext";
 import { useHomeScreenStyles } from "@/hooks/use-styles";
 import { type Pastilla } from "@/services/medicationService";
-import MedicationEditModal from "../../components/MedicationEditModal";
 
 export default function Home() {
-  const { user } = useAuth();
-  const { pastillas, hydrated, refreshRemote, trackMedicationToggle, removePastillaById, updatePastillaById } = useMedication();
+  const {
+    pastillas,
+    hydrated,
+    refreshRemote,
+    trackMedicationToggle,
+    removePastillaById,
+    updatePastillaById,
+  } = useMedication();
+  const { t } = useSettings();
   const styles = useHomeScreenStyles();
-  
-  // Debug logging
-  console.log("🏠 Home - User:", user?.id);
-  console.log("🏠 Home - Hydrated:", hydrated);
-  console.log("🏠 Home - Pastillas count:", pastillas.length);
-  console.log("🏠 Home - Pastillas data:", pastillas);
-  
-  // Modal state
+
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [editingItem, setEditingItem] = useState<Pastilla | null>(null);
   const [editMode, setEditMode] = useState<"dosis" | "time">("dosis");
 
   const marcarTomada = async (id: string) => {
     try {
-      const item = pastillas.find(p => p.id === id);
+      const item = pastillas.find((p) => p.id === id);
       if (item) {
         await trackMedicationToggle(id, !item.tomada);
       }
     } catch {
-      Alert.alert("Offline", "Se marcará cuando vuelva internet");
+      Alert.alert(t("offline"), t("willSyncWhenOnline"));
     }
   };
 
   const eliminar = (id: string) => {
-    Alert.alert("Eliminar", "¿Seguro?", [
-      { text: "Cancelar", style: "cancel" },
+    Alert.alert(t("deleteConfirmTitle"), t("deleteConfirmBody"), [
+      { text: t("cancel"), style: "cancel" },
       {
-        text: "Eliminar",
+        text: t("delete"),
         style: "destructive",
         onPress: async () => {
           try {
             await removePastillaById(id);
             await refreshRemote();
           } catch {
-            Alert.alert("Offline", "Se eliminará luego");
+            Alert.alert(t("offline"), t("willSyncWhenOnline"));
           }
         },
       },
@@ -62,16 +56,16 @@ export default function Home() {
   };
 
   const editar = (item: Pastilla) => {
-    Alert.alert(
-      "Editar medicamento",
-      "¿Qué quieres editar?",
-      [
-        { text: "Dosis", onPress: () => openEditModal(item, "dosis") },
-        { text: "Hora", onPress: () => openEditModal(item, "time") },
-        { text: "Eliminar", onPress: () => eliminar(item.id), style: "destructive" },
-        { text: "Cancelar", style: "cancel" },
-      ]
-    );
+    Alert.alert(t("editMedication"), t("whatToEdit"), [
+      { text: t("dose"), onPress: () => openEditModal(item, "dosis") },
+      { text: t("time"), onPress: () => openEditModal(item, "time") },
+      {
+        text: t("delete"),
+        onPress: () => eliminar(item.id),
+        style: "destructive",
+      },
+      { text: t("cancel"), style: "cancel" },
+    ]);
   };
 
   const openEditModal = (item: Pastilla, mode: "dosis" | "time") => {
@@ -85,33 +79,27 @@ export default function Home() {
 
     try {
       if (dosis !== undefined) {
-        // Dosis editing
         if (dosis === 0) {
-          // Delete medication
           await eliminar(editingItem.id);
         } else {
-          // Update dosis
-          await updatePastillaById(editingItem.id, { ...editingItem, cantidad: dosis });
+          await updatePastillaById(editingItem.id, {
+            ...editingItem,
+            cantidad: dosis,
+          });
           await refreshRemote();
-          Alert.alert("Éxito", "Dosis actualizada");
+          Alert.alert(t("success"), t("doseUpdated"));
         }
       } else if (time !== undefined) {
-        // Time editing
         await updatePastillaById(editingItem.id, { ...editingItem, time });
         await refreshRemote();
-        Alert.alert("Éxito", "Hora actualizada");
+        Alert.alert(t("success"), t("timeUpdated"));
       }
     } catch {
-      Alert.alert("Offline", "Se actualizará luego");
+      Alert.alert(t("offline"), t("willSyncWhenOnline"));
     } finally {
       setEditModalVisible(false);
       setEditingItem(null);
     }
-  };
-
-  const handleModalClose = () => {
-    setEditModalVisible(false);
-    setEditingItem(null);
   };
 
   if (!hydrated) {
@@ -143,7 +131,7 @@ export default function Home() {
 
               <View style={styles.medicationMetricBlock}>
                 <ThemedText style={styles.medicationMetricLabel}>
-                  Dosis
+                  {t("dose")}
                 </ThemedText>
                 <ThemedText style={styles.medicationMetricValue}>
                   {item.cantidad}
@@ -152,7 +140,7 @@ export default function Home() {
 
               <View style={styles.medicationMetricBlock}>
                 <ThemedText style={styles.medicationMetricLabel}>
-                  Hora
+                  {t("time")}
                 </ThemedText>
                 <ThemedText style={styles.medicationMetricValue}>
                   {item.time}
@@ -161,15 +149,19 @@ export default function Home() {
 
               <View style={styles.medicationActions}>
                 <Pressable onPress={() => marcarTomada(item.id)}>
-                  <MaterialIcons name="check" size={22} color={item.tomada ? "#4CAF50" : "#000000"} />
+                  <MaterialIcons
+                    name="check"
+                    size={22}
+                    color={item.tomada ? "#4CAF50" : "#000000"}
+                  />
                 </Pressable>
 
                 <Pressable onPress={() => editar(item)}>
-                  <MaterialIcons name="edit" size={20} color={item.tomada ? "#8B451" : "#000000"} />
+                  <MaterialIcons name="edit" size={20} color="#000000" />
                 </Pressable>
 
                 <Pressable onPress={() => eliminar(item.id)}>
-                  <MaterialIcons name="delete" size={20} color={item.tomada ? "#8B451" : "#000000"} />
+                  <MaterialIcons name="delete" size={20} color="#000000" />
                 </Pressable>
               </View>
             </View>
@@ -179,7 +171,10 @@ export default function Home() {
 
       <MedicationEditModal
         visible={editModalVisible}
-        onClose={handleModalClose}
+        onClose={() => {
+          setEditModalVisible(false);
+          setEditingItem(null);
+        }}
         onSave={handleModalSave}
         currentDosis={editingItem?.cantidad || 1}
         currentTime={editingItem?.time || "08:00"}

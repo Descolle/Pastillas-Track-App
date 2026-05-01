@@ -152,7 +152,7 @@ const translations: Record<AppLanguage, Record<TranslationKey, string>> = {
     takenDose: "Tomada",
     profileTitle: "PERFIL",
     loadingProfile: "Cargando perfil...",
-    years: "anos",
+    years: "años",
     plan: "Plan",
     weeklyProgress: "Tu progreso",
     noStats: "Aun no hay estadisticas disponibles.",

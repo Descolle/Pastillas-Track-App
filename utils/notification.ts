@@ -99,6 +99,28 @@ export async function scheduleNotification(
   });
 }
 
+export async function previewNotificationSound(sound: string) {
+  await setupChannel(sound);
+
+  const channelId = getChannelId(sound);
+
+  const notificationId = await Notifications.scheduleNotificationAsync({
+    content: {
+      title: "Notification tone",
+      body: "Sound preview",
+      sound,
+      priority: Notifications.AndroidNotificationPriority.HIGH,
+    },
+    trigger: Platform.OS === "android" ? { channelId } : null,
+  });
+
+  setTimeout(() => {
+    Notifications.cancelScheduledNotificationAsync(notificationId).catch(
+      () => {},
+    );
+  }, 2500);
+}
+
 export async function cancelNotification(id: string) {
   await Notifications.cancelScheduledNotificationAsync(id);
 }

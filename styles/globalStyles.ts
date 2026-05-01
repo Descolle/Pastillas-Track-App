@@ -249,14 +249,14 @@ export const useGlobalStyles = () => {
       },
 
       medicationIcon: {
-        width: 40,
-        height: 40,
-        borderRadius: 10,
+        width: 32,
+        height: 32,
+        borderRadius: 8,
         borderWidth: 1,
-        borderColor: "#000",
+        borderColor: borderColor,
         alignItems: "center",
         justifyContent: "center",
-        backgroundColor: "#fff",
+        backgroundColor: cardBackground,
       },
     });
   }, [backgroundColor, textColor, tintColor, borderColor, cardBackground, mutedColor]);

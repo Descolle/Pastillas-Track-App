@@ -8,6 +8,7 @@ import {
   type NotificationSound,
   useSettings,
 } from "@/context/SettingsContext";
+import { previewNotificationSound } from "@/utils/notification";
 
 type SettingsModalProps = {
   visible: boolean;
@@ -40,6 +41,7 @@ export default function SettingsModal({
 
   const selectSound = async (sound: NotificationSound) => {
     await setNotificationSound(sound);
+    await previewNotificationSound(sound);
     await onSoundChange(sound);
   };
 
@@ -160,9 +162,11 @@ export default function SettingsModal({
 function TextLabel({
   children,
   primary,
+  color,
 }: {
   children: string;
   primary?: boolean;
+  color?: string;
 }) {
   const { theme } = useSettings();
 
@@ -172,6 +176,7 @@ function TextLabel({
         styles.text,
         primary ? styles.primaryText : undefined,
         theme === "dark" ? styles.textDark : undefined,
+        color ? { color } : undefined,
       ]}
     >
       {children}
@@ -208,7 +213,7 @@ function SegmentButton({
       onPress={onPress}
       style={[styles.segmentButton, active ? styles.segmentButtonActive : null]}
     >
-      <TextLabel>{label}</TextLabel>
+      <TextLabel color="#111111">{label}</TextLabel>
     </Pressable>
   );
 }

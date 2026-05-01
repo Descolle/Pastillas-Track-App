@@ -222,8 +222,9 @@ export default function Profile() {
                         flexDirection: "row",
                         alignItems: "flex-end",
                         justifyContent: "space-around",
-                        height: 120,
-                        marginTop: 14,
+                        height: 170,
+                        marginTop: 18,
+                        paddingTop: 12,
                       }}
                     >
                       {stats.map((day) => (

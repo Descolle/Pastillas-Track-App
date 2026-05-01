@@ -148,7 +148,11 @@ export default function Home() {
               </View>
 
               <View style={styles.medicationActions}>
-                <Pressable onPress={() => marcarTomada(item.id)}>
+                <Pressable
+                  onPress={() => marcarTomada(item.id)}
+                  style={styles.medicationIcon}
+                  hitSlop={8}
+                >
                   <MaterialIcons
                     name="check"
                     size={22}
@@ -156,11 +160,19 @@ export default function Home() {
                   />
                 </Pressable>
 
-                <Pressable onPress={() => editar(item)}>
+                <Pressable
+                  onPress={() => editar(item)}
+                  style={styles.medicationIcon}
+                  hitSlop={8}
+                >
                   <MaterialIcons name="edit" size={20} color="#000000" />
                 </Pressable>
 
-                <Pressable onPress={() => eliminar(item.id)}>
+                <Pressable
+                  onPress={() => eliminar(item.id)}
+                  style={styles.medicationIcon}
+                  hitSlop={8}
+                >
                   <MaterialIcons name="delete" size={20} color="#000000" />
                 </Pressable>
               </View>

@@ -79,7 +79,9 @@
             }
           }
         }
-      ]
+      ],
+
+      "./plugins/withAdiRegistration.js"
     ],
 
     "experiments": {

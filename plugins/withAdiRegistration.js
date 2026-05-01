@@ -11,20 +11,28 @@ module.exports = function withAdiRegistration(config) {
         "assets",
         "adi-registration.properties"
       );
+
       const targetDir = path.join(
         config.modRequest.platformProjectRoot,
         "app",
         "src",
         "main",
-        "assets"
+        "res",
+        "raw"
       );
 
       if (!fs.existsSync(source)) {
         throw new Error(`Missing ADI registration file: ${source}`);
       }
 
+      // crear carpeta raw si no existe
       fs.mkdirSync(targetDir, { recursive: true });
-      fs.copyFileSync(source, path.join(targetDir, "adi-registration.properties"));
+
+      // copiar archivo
+      fs.copyFileSync(
+        source,
+        path.join(targetDir, "adi-registration.properties")
+      );
 
       return config;
     },

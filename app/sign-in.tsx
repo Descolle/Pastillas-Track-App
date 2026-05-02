@@ -155,6 +155,15 @@ export default function SignIn() {
           style={inputStyle}
         />
 
+        <Pressable
+          onPress={() => router.push("/forgot-password" as never)}
+          style={{ marginTop: 12, alignSelf: "flex-end" }}
+        >
+          <ThemedText style={{ color: "#FFFFFF", fontWeight: "600" }}>
+            Olvidaste tu contrasena?
+          </ThemedText>
+        </Pressable>
+
         {/* Remember Me Checkbox */}
         <Pressable
           onPress={() => setRememberMe(!rememberMe)}

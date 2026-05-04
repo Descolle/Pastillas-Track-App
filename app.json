@@ -2,7 +2,7 @@
   "expo": {
     "name": "RecuerdaMed",
     "slug": "pastillas-app",
-    "version": "1.1.0",
+    "version": "1.1.1",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "pastillasapp",
@@ -17,7 +17,7 @@
     },
     "android": {
       "package": "com.pastillasapp.pastillas",
-      "versionCode": 8,
+      "versionCode": 9,
       "permissions": [
         "POST_NOTIFICATIONS"
       ],

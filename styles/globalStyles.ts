@@ -183,6 +183,13 @@ export const useGlobalStyles = () => {
 
       medicationCardTopRow: {
         flexDirection: "row",
+        justifyContent: "flex-start",
+        alignItems: "center",
+        marginBottom: 8,
+      },
+
+      medicationCardBottomRow: {
+        flexDirection: "row",
         justifyContent: "space-between",
         alignItems: "center",
       },

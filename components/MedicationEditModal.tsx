@@ -77,8 +77,14 @@ export default function MedicationEditModal({
       animationType="fade"
       onRequestClose={onClose}
     >
-      <View style={modalStyles.overlay}>
-        <View style={[modalStyles.container, dark && modalStyles.containerDark]}>
+      <Pressable 
+        style={modalStyles.overlay} 
+        onPress={onClose}
+      >
+        <Pressable 
+          style={[modalStyles.container, dark && modalStyles.containerDark]}
+          onPress={(e) => e.stopPropagation()}
+        >
           <ThemedText style={modalStyles.title}>
             {editMode === "dosis" ? t("editDose") : t("editTime")}
           </ThemedText>
@@ -133,8 +139,8 @@ export default function MedicationEditModal({
               </ThemedText>
             </Pressable>
           </View>
-        </View>
-      </View>
+        </Pressable>
+      </Pressable>
     </Modal>
   );
 }
@@ -222,3 +228,5 @@ const modalStyles = StyleSheet.create({
     fontWeight: "500",
   },
 });
+
+

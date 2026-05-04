@@ -117,6 +117,7 @@ export default function Home() {
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
           <View style={styles.medicationCard}>
+            {/* Top row - Medication name */}
             <View style={styles.medicationCardTopRow}>
               <View style={styles.medicationInfoBlock}>
                 <ThemedText
@@ -128,7 +129,10 @@ export default function Home() {
                   {item.nombre}
                 </ThemedText>
               </View>
+            </View>
 
+            {/* Bottom row - Dosage, Time, and Actions */}
+            <View style={styles.medicationCardBottomRow}>
               <View style={styles.medicationMetricBlock}>
                 <ThemedText style={styles.medicationMetricLabel}>
                   {t("dose")}

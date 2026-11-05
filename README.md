@@ -2,11 +2,11 @@
 
 # 💊 RecuerdaMed
 
-**App móvil SaaS para gestionar medicamentos diarios, con recordatorios inteligentes, sincronización en la nube y suscripciones Pro.**
+**App móvil SaaS para gestionar medicamentos diarios: recordatorios inteligentes, sincronización en la nube y suscripciones Pro.**
 
-![React Native](https://img.shields.io/badge/React_Native-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)
-![Expo](https://img.shields.io/badge/Expo-000020?style=for-the-badge&logo=expo&logoColor=white)
-![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
+![React Native](https://img.shields.io/badge/React_Native-0.81-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)
+![Expo](https://img.shields.io/badge/Expo_SDK-54-000020?style=for-the-badge&logo=expo&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
 ![Supabase](https://img.shields.io/badge/Supabase-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)
 ![Stripe](https://img.shields.io/badge/Stripe-635BFF?style=for-the-badge&logo=stripe&logoColor=white)
@@ -20,7 +20,7 @@
 
 Olvidar una dosis es más común de lo que parece, y las apps existentes suelen ser complejas o no funcionan bien sin conexión. **RecuerdaMed** resuelve esto con una experiencia simple: registrar un medicamento, recibir un aviso a la hora exacta y ver de un vistazo qué falta por tomar hoy.
 
-## ✨ Qué hace
+## ✨ Función
 
 | | |
 |---|---|
@@ -30,7 +30,17 @@ Olvidar una dosis es más común de lo que parece, y las apps existentes suelen 
 | ☁️ **Sincronización multi-dispositivo** | Tus datos te siguen entre dispositivos gracias a Supabase |
 | 📴 **Offline-first** | Funciona sin conexión con caché local y sincroniza al reconectar |
 | 💳 **Plan Free / Pro** | Suscripciones con Stripe: checkout, portal de cliente y webhooks |
-| 🔐 **Cuentas seguras** | Registro, inicio de sesión y eliminación de cuenta |
+| 🔐 **Cuentas seguras** | Registro, inicio de sesión, términos y condiciones, y eliminación de cuenta |
+
+## 📦 Más que un prototipo: pensado para producción
+
+El proyecto no se queda en el código; cubre lo necesario para llevar una app a una tienda:
+
+- **Cumplimiento de Google Play:** [política de privacidad](https://descolle.github.io/Pastillas-Track-App/privacy-policy.html) y [página de eliminación de cuenta](https://descolle.github.io/Pastillas-Track-App/account-deletion.html) publicadas en GitHub Pages.
+- **Documentación de lanzamiento:** ficha de tienda, guía de clasificación de contenido y piezas gráficas en [`docs/`](./docs) y [`QUICK_START_GUIDE.md`](./QUICK_START_GUIDE.md).
+- **Builds reproducibles:** perfiles EAS para APK (pruebas internas) y AAB (Google Play).
+- **Multiplataforma:** configurada para Android, iOS y Web con una sola base de código.
+- **Desarrollo sostenido:** más de 60 commits de evolución del producto.
 
 ## 🏗️ Arquitectura
 
@@ -52,22 +62,23 @@ Olvidar una dosis es más común de lo que parece, y las apps existentes suelen 
 
 - **Offline-first:** AsyncStorage como caché local y sincronización automática con Supabase al iniciar sesión, incluyendo migración de datos locales a la nube en el primer login.
 - **Seguridad multi-tenant:** cada fila de `medications` y `medication_events` lleva `user_id`, y las políticas **RLS** de PostgreSQL impiden que un usuario lea o escriba datos de otro.
-- **Monetización real:** el plan vive en `profiles.plan_tier` y se actualiza vía **webhooks de Stripe**, de modo que el backend es la fuente de verdad, no el cliente.
+- **Monetización real:** el plan vive en `profiles.plan_tier` y se actualiza vía **webhooks de Stripe**; el backend es la fuente de verdad, no el cliente.
 - **Estado global ordenado:** Context API separado para autenticación y medicamentos.
-- **Código modular:** capas diferenciadas de UI, contexto, hooks, servicios y utilidades, con tipado estricto en TypeScript.
-- **Builds listos para producción:** perfiles EAS para APK (pruebas internas) y AAB (Google Play).
+- **Código modular:** capas diferenciadas de UI, contexto, hooks, servicios y utilidades, con TypeScript y ESLint configurados.
+- **Pila moderna:** Expo SDK 54, React 19, React Native 0.81 y Expo Router para navegación basada en archivos.
 
 ## 🛠️ Stack
 
 | Capa | Tecnologías |
 |---|---|
-| **Mobile** | React Native, Expo, Expo Router, Expo Notifications |
-| **Lenguaje** | TypeScript |
+| **Mobile** | React Native 0.81, Expo SDK 54, Expo Router, Expo Notifications, Reanimated |
+| **Lenguaje** | TypeScript 5.9, React 19 |
 | **Estado y persistencia** | Context API, AsyncStorage |
 | **Backend / BaaS** | Supabase (Auth, PostgreSQL, RLS) |
 | **Pagos** | Stripe (Checkout, Customer Portal, Webhooks) |
 | **API de billing** | Node.js |
-| **Distribución** | EAS Build (APK / AAB) |
+| **Distribución** | EAS Build (APK / AAB), GitHub Pages para páginas legales |
+| **Calidad** | ESLint (config Expo), TypeScript |
 
 ## 📁 Estructura del proyecto
 
@@ -79,8 +90,11 @@ hooks/          → Tema, estilos y acuerdo de términos
 services/       → Medicamentos, cuenta, pagos y observabilidad
 utils/          → Notificaciones y formularios
 lib/            → Cliente Supabase y variables de entorno
-supabase/sql/   → Esquema SaaS y funciones de billing
+types/          → Tipos TypeScript compartidos
+supabase/       → Esquema SaaS (RLS) y funciones de billing
 backend/        → Billing API (Stripe)
+docs/           → Documentación de publicación en Google Play
+android/        → Proyecto nativo Android
 ```
 
 ## 🚀 Cómo probarlo
@@ -123,18 +137,20 @@ npm run build:android:apk   # APK para instalar en celulares de prueba
 npm run build:android:aab   # AAB para Google Play Store
 ```
 
-Perfiles EAS: `preview` (APK, distribución interna) y `production` (AAB).
+Perfiles EAS: `preview` (APK, distribución interna) y `production` (AAB). Guía completa de publicación en [`QUICK_START_GUIDE.md`](./QUICK_START_GUIDE.md).
 </details>
 
 ## 🗺️ Roadmap
 
+- [x] Autenticación, sincronización y modelo multi-tenant con RLS
+- [x] Planes Free / Pro con Stripe
+- [x] Builds Android (APK / AAB) y documentación de publicación
+- [ ] Publicación en Google Play Store
 - [ ] Notificaciones interactivas (botón "Tomar")
 - [ ] Historial de consumo y estadísticas
 - [ ] Dark mode automático
 - [ ] Selección de idioma (Español / Inglés)
 - [ ] Protección con PIN
-- [ ] Selector personalizado de sonidos
-- [ ] Publicación en Google Play Store
 
 ---
 
@@ -142,7 +158,7 @@ Perfiles EAS: `preview` (APK, distribución interna) y `production` (AAB).
 
 **Tomás Corvalán** · Full Stack Developer en Valparaíso, Chile
 
-Desarrollo aplicaciones de punta a punta, desde la app móvil hasta la base de datos, la seguridad y los pagos. Este proyecto muestra cómo llevo una idea a un producto SaaS real.
+Desarrollo aplicaciones de punta a punta, desde la app móvil hasta la base de datos, la seguridad y los pagos. Este proyecto muestra cómo llevo una idea a un producto SaaS real, incluyendo la preparación para su lanzamiento.
 
 **Stack principal:** React · React Native · Node.js · TypeScript · PostgreSQL · Supabase · Stripe · Expo
 

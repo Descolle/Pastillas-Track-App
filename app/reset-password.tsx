@@ -1,8 +1,9 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
 import { useState } from "react";
-import { Alert, Pressable, TextInput, View } from "react-native";
+import { Alert, Pressable, View } from "react-native";
 
+import PasswordInput from "@/components/PasswordInput";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { supabase } from "@/lib/supabase";
@@ -22,6 +23,13 @@ export default function ResetPassword() {
     paddingHorizontal: 16,
     color: "#111111",
     fontSize: 16,
+  } as const;
+  const passwordTextStyle = {
+    color: "#111111",
+    fontSize: 16,
+    paddingLeft: 16,
+    paddingRight: 4,
+    paddingVertical: 14,
   } as const;
 
   const handleUpdatePassword = async () => {
@@ -79,22 +87,22 @@ export default function ResetPassword() {
           Crea una nueva contrasena para volver a entrar a tu cuenta.
         </ThemedText>
 
-        <TextInput
+        <PasswordInput
           placeholder="Nueva contrasena"
           placeholderTextColor="#6B7280"
           value={password}
-          secureTextEntry
           onChangeText={setPassword}
-          style={inputStyle}
+          containerStyle={inputStyle}
+          inputStyle={passwordTextStyle}
         />
 
-        <TextInput
+        <PasswordInput
           placeholder="Confirmar contrasena"
           placeholderTextColor="#6B7280"
           value={confirmPassword}
-          secureTextEntry
           onChangeText={setConfirmPassword}
-          style={inputStyle}
+          containerStyle={inputStyle}
+          inputStyle={passwordTextStyle}
         />
 
         <Pressable

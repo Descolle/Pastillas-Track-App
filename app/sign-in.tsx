@@ -3,6 +3,7 @@ import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import { Alert, Pressable, TextInput, View } from "react-native";
 
+import PasswordInput from "@/components/PasswordInput";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { supabase } from "@/lib/supabase";
@@ -23,6 +24,13 @@ export default function SignIn() {
     paddingHorizontal: 16,
     color: "#111111",
     fontSize: 16,
+  } as const;
+  const passwordTextStyle = {
+    color: "#111111",
+    fontSize: 16,
+    paddingLeft: 16,
+    paddingRight: 4,
+    paddingVertical: 14,
   } as const;
 
   // Load saved credentials on component mount
@@ -146,13 +154,13 @@ export default function SignIn() {
           style={inputStyle}
         />
 
-        <TextInput
+        <PasswordInput
           placeholder="Contrasena"
           placeholderTextColor="#6B7280"
           value={password}
-          secureTextEntry
           onChangeText={setPassword}
-          style={inputStyle}
+          containerStyle={inputStyle}
+          inputStyle={passwordTextStyle}
         />
 
         <Pressable

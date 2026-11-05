@@ -10,6 +10,7 @@ import {
     View,
 } from "react-native";
 
+import PasswordInput from "@/components/PasswordInput";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { supabase } from "@/lib/supabase";
@@ -35,6 +36,13 @@ export default function SignUp() {
     paddingHorizontal: 16,
     color: "#111111",
     fontSize: 16,
+  } as const;
+  const passwordTextStyle = {
+    color: "#111111",
+    fontSize: 16,
+    paddingLeft: 16,
+    paddingRight: 4,
+    paddingVertical: 14,
   } as const;
 
   const handleSignUp = async () => {
@@ -164,13 +172,13 @@ export default function SignUp() {
             style={inputStyle}
           />
 
-          <TextInput
+          <PasswordInput
             placeholder="Contrasena"
             placeholderTextColor="#6B7280"
             value={password}
             onChangeText={setPassword}
-            secureTextEntry
-            style={inputStyle}
+            containerStyle={inputStyle}
+            inputStyle={passwordTextStyle}
           />
 
           <View style={{ marginTop: 22 }}>

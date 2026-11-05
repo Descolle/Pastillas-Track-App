@@ -2,6 +2,7 @@ import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { useState } from "react";
 import { ActivityIndicator, Alert, FlatList, Pressable, View } from "react-native";
 
+import ConfirmDeleteMedicationModal from "@/components/ConfirmDeleteMedicationModal";
 import MedicationEditModal from "@/components/MedicationEditModal";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
@@ -25,6 +26,8 @@ export default function Home() {
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [editingItem, setEditingItem] = useState<Pastilla | null>(null);
   const [editMode, setEditMode] = useState<"dosis" | "time">("dosis");
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   const marcarTomada = async (id: string) => {
     try {
@@ -37,22 +40,28 @@ export default function Home() {
     }
   };
 
-  const eliminar = (id: string) => {
-    Alert.alert(t("deleteConfirmTitle"), t("deleteConfirmBody"), [
-      { text: t("cancel"), style: "cancel" },
-      {
-        text: t("delete"),
-        style: "destructive",
-        onPress: async () => {
-          try {
-            await removePastillaById(id);
-            await refreshRemote();
-          } catch {
-            Alert.alert(t("offline"), t("willSyncWhenOnline"));
-          }
-        },
-      },
-    ]);
+  const solicitarEliminacion = (id: string) => {
+    setPendingDeleteId(id);
+  };
+
+  const confirmarEliminacion = async () => {
+    if (!pendingDeleteId || deleteLoading) return;
+
+    try {
+      setDeleteLoading(true);
+      await removePastillaById(pendingDeleteId);
+      await refreshRemote();
+      setPendingDeleteId(null);
+    } catch {
+      Alert.alert(t("offline"), t("willSyncWhenOnline"));
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
+
+  const cancelarEliminacion = () => {
+    if (deleteLoading) return;
+    setPendingDeleteId(null);
   };
 
   const editar = (item: Pastilla) => {
@@ -61,7 +70,7 @@ export default function Home() {
       { text: t("time"), onPress: () => openEditModal(item, "time") },
       {
         text: t("delete"),
-        onPress: () => eliminar(item.id),
+        onPress: () => solicitarEliminacion(item.id),
         style: "destructive",
       },
       { text: t("cancel"), style: "cancel" },
@@ -80,7 +89,7 @@ export default function Home() {
     try {
       if (dosis !== undefined) {
         if (dosis === 0) {
-          await eliminar(editingItem.id);
+          solicitarEliminacion(editingItem.id);
         } else {
           await updatePastillaById(editingItem.id, {
             ...editingItem,
@@ -173,7 +182,7 @@ export default function Home() {
                 </Pressable>
 
                 <Pressable
-                  onPress={() => eliminar(item.id)}
+                  onPress={() => solicitarEliminacion(item.id)}
                   style={styles.medicationIcon}
                   hitSlop={8}
                 >
@@ -195,6 +204,13 @@ export default function Home() {
         currentDosis={editingItem?.cantidad || 1}
         currentTime={editingItem?.time || "08:00"}
         editMode={editMode}
+      />
+
+      <ConfirmDeleteMedicationModal
+        visible={pendingDeleteId !== null}
+        loading={deleteLoading}
+        onCancel={cancelarEliminacion}
+        onConfirm={confirmarEliminacion}
       />
     </ThemedView>
   );

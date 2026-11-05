@@ -34,14 +34,7 @@ export default function MedicationEditModal({
       }
 
       if (dosis === 0) {
-        Alert.alert(t("delete"), t("deleteMedicationQuestion"), [
-          { text: t("cancel"), style: "cancel" },
-          {
-            text: t("delete"),
-            style: "destructive",
-            onPress: () => onSave(0),
-          },
-        ]);
+        onSave(0);
       } else {
         onSave(dosis);
       }
@@ -228,5 +221,4 @@ const modalStyles = StyleSheet.create({
     fontWeight: "500",
   },
 });
-
 

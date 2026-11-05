@@ -1,148 +1,110 @@
-# 💊 Pastillas Track App
+<div align="center">
 
-Aplicación móvil desarrollada con React Native + Expo para gestionar el consumo de medicamentos diarios, incluyendo recordatorios automáticos mediante notificaciones.
+# 💊 RecuerdaMed
 
----
+**App móvil SaaS para gestionar medicamentos diarios, con recordatorios inteligentes, sincronización en la nube y suscripciones Pro.**
 
-## 🚀 Descripción
+![React Native](https://img.shields.io/badge/React_Native-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)
+![Expo](https://img.shields.io/badge/Expo-000020?style=for-the-badge&logo=expo&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
+![Supabase](https://img.shields.io/badge/Supabase-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)
+![Stripe](https://img.shields.io/badge/Stripe-635BFF?style=for-the-badge&logo=stripe&logoColor=white)
+![Node.js](https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white)
 
-Pastillas Track App permite a los usuarios:
-
-* Registrar medicamentos con nombre, cantidad y horario
-* Marcar medicamentos como tomados
-* Editar o eliminar registros
-* Recibir notificaciones diarias en la hora indicada
-* Visualizar un resumen del estado diario (tomadas / pendientes)
-* Crear cuenta e iniciar sesión (SaaS)
-* Sincronizar datos entre dispositivos con Supabase
-* Gestionar plan Free/Pro con Stripe
+</div>
 
 ---
 
-## 🛠️ Tecnologías utilizadas
+## 🎯 El problema
 
-* React Native
-* Expo (Expo Router)
-* TypeScript
-* AsyncStorage (persistencia local)
-* Expo Notifications (recordatorios)
-* Context API (estado global)
-* Supabase (Auth + Postgres + RLS)
-* Stripe (suscripciones)
+Olvidar una dosis es más común de lo que parece, y las apps existentes suelen ser complejas o no funcionan bien sin conexión. **RecuerdaMed** resuelve esto con una experiencia simple: registrar un medicamento, recibir un aviso a la hora exacta y ver de un vistazo qué falta por tomar hoy.
 
----
+## ✨ Qué hace
+
+| | |
+|---|---|
+| 🔔 **Recordatorios diarios** | Notificaciones locales programadas automáticamente, con sonidos personalizados y canal Android de máxima prioridad |
+| ✅ **Seguimiento del día** | Marca medicamentos como tomados y consulta el resumen de tomadas vs. pendientes |
+| 🗂️ **CRUD completo** | Crear, editar y eliminar medicamentos con nombre, cantidad y horario |
+| ☁️ **Sincronización multi-dispositivo** | Tus datos te siguen entre dispositivos gracias a Supabase |
+| 📴 **Offline-first** | Funciona sin conexión con caché local y sincroniza al reconectar |
+| 💳 **Plan Free / Pro** | Suscripciones con Stripe: checkout, portal de cliente y webhooks |
+| 🔐 **Cuentas seguras** | Registro, inicio de sesión y eliminación de cuenta |
+
+## 🏗️ Arquitectura
+
+```
+┌──────────────────────┐        ┌───────────────────────┐
+│  App móvil           │        │  Billing API (Node)   │
+│  React Native + Expo │───────▶│  Stripe Checkout      │
+│  TypeScript          │        │  Portal + Webhooks    │
+└─────────┬────────────┘        └──────────┬────────────┘
+          │                                │
+          │ Auth + Sync                    │ actualiza plan
+          ▼                                ▼
+┌──────────────────────────────────────────────────────┐
+│  Supabase: Auth · PostgreSQL · Row Level Security    │
+└──────────────────────────────────────────────────────┘
+```
+
+## 🧩 Decisiones técnicas destacadas
+
+- **Offline-first:** AsyncStorage como caché local y sincronización automática con Supabase al iniciar sesión, incluyendo migración de datos locales a la nube en el primer login.
+- **Seguridad multi-tenant:** cada fila de `medications` y `medication_events` lleva `user_id`, y las políticas **RLS** de PostgreSQL impiden que un usuario lea o escriba datos de otro.
+- **Monetización real:** el plan vive en `profiles.plan_tier` y se actualiza vía **webhooks de Stripe**, de modo que el backend es la fuente de verdad, no el cliente.
+- **Estado global ordenado:** Context API separado para autenticación y medicamentos.
+- **Código modular:** capas diferenciadas de UI, contexto, hooks, servicios y utilidades, con tipado estricto en TypeScript.
+- **Builds listos para producción:** perfiles EAS para APK (pruebas internas) y AAB (Google Play).
+
+## 🛠️ Stack
+
+| Capa | Tecnologías |
+|---|---|
+| **Mobile** | React Native, Expo, Expo Router, Expo Notifications |
+| **Lenguaje** | TypeScript |
+| **Estado y persistencia** | Context API, AsyncStorage |
+| **Backend / BaaS** | Supabase (Auth, PostgreSQL, RLS) |
+| **Pagos** | Stripe (Checkout, Customer Portal, Webhooks) |
+| **API de billing** | Node.js |
+| **Distribución** | EAS Build (APK / AAB) |
 
 ## 📁 Estructura del proyecto
 
 ```
-app/
-  (tabs)/
-    index.tsx        → Pantalla principal (CRUD medicamentos)
-    create.tsx        → Crear nuevo medicamento
-    profile.tsx       → Perfil de usuario
-    account.tsx       → Cuenta y configuración
-    stats.tsx         → Estadísticas (placeholder)
-    _layout.tsx       → Navegación Tabs
-
-  _layout.tsx         → Provider global + configuración
-  sign-in.tsx         → Inicio de sesión
-  sign-up.tsx         → Registro
-  edit-profile.tsx    → Editar perfil
-  delete-account.tsx  → Eliminar cuenta
-  legal.tsx           → Información legal
-  terms.tsx           → Términos y condiciones
-  modal.tsx           → Componente modal
-  paywall.tsx         → Muro de pago
-
-components/
-  ui/                 → Componentes reutilizables
-    collapsible.tsx   → Componente plegable
-    icon-symbol.tsx   → Iconos simbólicos
-  themed-text.tsx     → Texto con tema
-  themed-view.tsx     → Vista con tema
-  MedicationEditModal.tsx → Modal edición medicamentos
-  external-link.tsx   → Enlaces externos
-  haptic-tab.tsx      → Tabs hápticos
-  hello-wave.tsx      → Componente ejemplo
-  parallax-scroll-view.tsx → Scroll con paralaje
-
-context/
-  AuthContext.tsx     → Estado global de autenticación
-  MedicationContext.tsx → Estado global de medicamentos
-
-hooks/
-  use-styles.ts       → Gestión de estilos
-  use-color-scheme.ts → Esquema de colores
-  use-theme-color.ts  → Color del tema
-  use-terms-agreement.ts → Acuerdo de términos
-
-utils/
-  notification.ts     → Funciones de notificación
-  notification.js     → Versión JS de notificaciones
-  medication-form.ts  → Formulario medicamentos
-
-services/
-  medicationService.ts → Lógica de medicamentos
-  account.ts          → Servicios de cuenta
-  payments.ts         → Servicios de pagos
-  loadRemotePastillas.js → Carga remota
-  observability.ts    → Observabilidad
-
-styles/
-  homeStyles.ts       → Estilos pantalla principal
-  globalStyles.ts     → Estilos globales
-
-constants/
-  theme.ts            → Constantes de tema
-
-lib/
-  supabase.ts         → Configuración Supabase
-  env.ts              → Variables de entorno
-
-assets/
-  sounds/             → Sonidos de notificación
-  images/             → Imágenes de la app
+app/            → Pantallas y rutas (Expo Router): tabs, auth, paywall, perfil
+components/     → Componentes reutilizables y UI temática
+context/        → AuthContext y MedicationContext
+hooks/          → Tema, estilos y acuerdo de términos
+services/       → Medicamentos, cuenta, pagos y observabilidad
+utils/          → Notificaciones y formularios
+lib/            → Cliente Supabase y variables de entorno
+supabase/sql/   → Esquema SaaS y funciones de billing
+backend/        → Billing API (Stripe)
 ```
 
----
-
-## ⚙️ Instalación
-
-1. Clonar el repositorio:
+## 🚀 Cómo probarlo
 
 ```bash
+# 1. Clonar e instalar
 git clone https://github.com/Descolle/Pastillas-Track-App.git
-```
-
-2. Entrar al proyecto:
-
-```bash
 cd Pastillas-Track-App
-```
-
-3. Instalar dependencias:
-
-```bash
 npm install
+
+# 2. Configurar variables en app.json → expo.extra
+#    EXPO_PUBLIC_SUPABASE_URL, EXPO_PUBLIC_SUPABASE_ANON_KEY,
+#    EXPO_PUBLIC_BILLING_API_URL, EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY
+
+# 3. Ejecutar en Supabase: supabase/sql/001_saas_schema.sql y 002_billing_helpers.sql
+
+# 4. Iniciar la app
+npx expo start
 ```
 
-4. Configurar variables públicas en `app.json` dentro de `expo.extra`:
+> 📱 Recomendado: escanear el QR con **Expo Go** en un dispositivo físico (las notificaciones pueden fallar en emuladores).
 
-```json
-{
-  "EXPO_PUBLIC_SUPABASE_URL": "https://YOUR_PROJECT.supabase.co",
-  "EXPO_PUBLIC_SUPABASE_ANON_KEY": "YOUR_SUPABASE_ANON_KEY",
-  "EXPO_PUBLIC_BILLING_API_URL": "https://YOUR_BILLING_API_URL",
-  "EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY": "pk_test_xxx"
-}
-```
-
-5. Ejecutar SQL de Supabase:
-
-* `supabase/sql/001_saas_schema.sql`
-* `supabase/sql/002_billing_helpers.sql`
-
-6. (Opcional en local) Billing API:
+<details>
+<summary><b>Billing API (opcional en local)</b></summary>
 
 ```bash
 cd backend/billing-api
@@ -150,175 +112,45 @@ npm install
 npm run dev
 ```
 
----
+Variables requeridas: `STRIPE_SECRET_KEY`, `STRIPE_PRICE_PRO`, `STRIPE_WEBHOOK_SECRET`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` y las URLs de retorno (`STRIPE_SUCCESS_URL`, `STRIPE_CANCEL_URL`, `STRIPE_PORTAL_RETURN_URL`).
+</details>
 
-## ▶️ Cómo ejecutar la app
-
-Iniciar el servidor de desarrollo:
-
-```bash
-npx expo start
-```
-
-Opciones:
-
-* Presionar `a` → abrir en Android
-* Presionar `w` → abrir en navegador
-* Escanear QR con Expo Go (recomendado)
-
----
-
-## 🔔 Notificaciones
-
-La app utiliza notificaciones locales:
-
-* Se solicitan permisos automáticamente
-* Se programan al crear una pastilla
-* Se repiten diariamente
-* Se eliminan al borrar la pastilla
-
-⚠️ Importante:
-
-* Probar en dispositivo físico (emuladores pueden fallar)
-
----
-
-## 📦 Builds Android (APK y AAB)
-
-La app puede generarse en dos formatos distintos:
-
-* `APK` → para instalar manualmente en celulares de prueba
-* `AAB` → para subir a Google Play Store
-
-Comandos:
+<details>
+<summary><b>Builds Android (APK / AAB)</b></summary>
 
 ```bash
-npm run build:android:apk
-npm run build:android:aab
+npm run build:android:apk   # APK para instalar en celulares de prueba
+npm run build:android:aab   # AAB para Google Play Store
 ```
 
-Perfiles EAS usados:
+Perfiles EAS: `preview` (APK, distribución interna) y `production` (AAB).
+</details>
 
-* `preview` → genera APK (`distribution: internal`, `buildType: apk`)
-* `production` → genera AAB (`buildType: app-bundle`)
+## 🗺️ Roadmap
 
-Notas importantes:
-
-* El archivo `AAB` no se instala directo en el teléfono.
-* Para instalar manualmente en Android necesitas un `APK`.
-* Si instalas una APK nueva encima de la anterior (misma firma y package), la app se actualiza sin perder datos.
-
----
-
-## 💾 Persistencia
-
-* Cache local con AsyncStorage (offline-first)
-* Sincronización automática con Supabase al iniciar sesión
-* Migración local -> nube en primer login
+- [ ] Notificaciones interactivas (botón "Tomar")
+- [ ] Historial de consumo y estadísticas
+- [ ] Dark mode automático
+- [ ] Selección de idioma (Español / Inglés)
+- [ ] Protección con PIN
+- [ ] Selector personalizado de sonidos
+- [ ] Publicación en Google Play Store
 
 ---
 
-## 🔐 Multi-tenant y seguridad
+## 👨‍💻 Sobre el autor
 
-* Cada fila de `medications` y `medication_events` incluye `user_id`
-* Las políticas RLS impiden leer/escribir datos de otros usuarios
-* El plan de suscripción vive en `profiles.plan_tier`
+**Tomás Corvalán** · Full Stack Developer en Valparaíso, Chile
 
----
+Desarrollo aplicaciones de punta a punta, desde la app móvil hasta la base de datos, la seguridad y los pagos. Este proyecto muestra cómo llevo una idea a un producto SaaS real.
 
-## 💳 Billing Stripe
+**Stack principal:** React · React Native · Node.js · TypeScript · PostgreSQL · Supabase · Stripe · Expo
 
-* Checkout para upgrade a `pro`
-* Portal de cliente para gestionar suscripción
-* Webhook para actualizar `plan_tier` y estado en `profiles`
+🗣️ Inglés C1
 
-Configurar en backend `billing-api`:
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-0A66C2?style=for-the-badge&logo=linkedin&logoColor=white)](https://linkedin.com/in/tomas-c-0893b120b)
+[![GitHub](https://img.shields.io/badge/GitHub-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/Descolle)
+[![Portafolio](https://img.shields.io/badge/Portafolio-000000?style=for-the-badge&logo=vercel&logoColor=white)](https://portafolio-ten-alpha-63.vercel.app)
+[![Email](https://img.shields.io/badge/Email-D14836?style=for-the-badge&logo=gmail&logoColor=white)](mailto:tomascorvalan14@gmail.com)
 
-* `STRIPE_SECRET_KEY`
-* `STRIPE_PRICE_PRO`
-* `STRIPE_WEBHOOK_SECRET`
-* `SUPABASE_URL`
-* `SUPABASE_SERVICE_ROLE_KEY`
-* URLs de retorno (`STRIPE_SUCCESS_URL`, `STRIPE_CANCEL_URL`, `STRIPE_PORTAL_RETURN_URL`)
-
----
-
-## ✅ Release checklist (SaaS)
-
-* Variables `expo.extra` configuradas por entorno (dev/prod)
-* SQL de Supabase aplicado y RLS validado
-* Billing API desplegada con webhook activo
-* Prueba de login, CRUD, sync y upgrade/downgrade de plan
-* Build Android con entorno correcto
-
----
-
-## 🧠 Funcionalidades principales
-
-* ➕ Crear medicamento
-* ✏️ Editar medicamento
-* ❌ Eliminar medicamento
-* ✅ Marcar como tomado
-* 🔔 Notificación automática diaria
-* 📊 Dashboard con resumen
-
----
-
-## 🎨 UI
-
-* Diseño basado en cards
-* Componentes reutilizables
-* Colores centralizados en theme
-* Estructura modular escalable
-
----
-
-## � Sonidos de Notificación
-
-La app utiliza sonidos personalizados para recordatorios de medicamentos:
-
-### Archivos Requeridos:
-```
-assets/sounds/
-├── pill_reminder_1.wav  - Recordatorio fuerte
-├── pill_reminder_2.wav  - Alternativa fuerte  
-└── pill_reminder_3.wav  - Otra opción fuerte
-```
-
-### Requisitos de Audio:
-* **Formato**: WAV o MP3
-* **Duración**: 1-3 segundos
-* **Volumen**: Alta calidad, salida fuerte
-* **Tamaño**: Menos de 100KB cada uno
-
-### Fuentes de Sonidos Gratuitos:
-* [Zapsplat](https://www.zapsplat.com/)
-* [Freesound](https://freesound.org/)
-* [Mixkit](https://mixkit.co/)
-
-### Implementación:
-* Selección aleatoria entre los 3 sonidos
-* Configuración de canal Android con máxima importancia
-* Vibración y LED incluidos para mayor atención
-
----
-
-## �� Mejoras futuras
-
-* 🔔 Notificaciones interactivas (botón "Tomar")
-* 🌙 Dark mode automático
-* 📆 Historial de consumo
-* ☁️ Backend con usuarios
-* 📱 Publicación en Play Store
-* 🔐 Protección con PIN para configuración
-* 🌍 Selección de idioma (Español/Inglés)
-* 🎛️ Selector personalizado de sonidos de notificación
-
----
-
-## 🧑‍💻 Autor
-
-Desarrollado por:
-**Tomás Corvalán**
-
----
+> 💼 **Abierto a oportunidades como desarrollador Full Stack / Mobile.**
